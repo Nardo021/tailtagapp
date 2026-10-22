@@ -39,10 +39,11 @@ final class SpottingRecord {
     }
 
     var asEntry: SpottingEntry {
-        let p = photos
-        return SpottingEntry(
+        // Missing photo bytes stay missing. A placeholder Data value would count as a real photo
+        // and can hide records whose CloudKit attachments have not been downloaded yet.
+        SpottingEntry(
             id: id,
-            photos: p.isEmpty ? [Data()] : p,
+            photos: photos,
             registration: registration,
             airline: airline,
             location: location,

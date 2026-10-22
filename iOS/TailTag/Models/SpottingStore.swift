@@ -4,22 +4,97 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+enum SpottingPersistenceError: LocalizedError {
+    case saveFailed
+    case recordNotFound
+
+    var errorDescription: String? {
+        switch self {
+        case .saveFailed:
+            return "The spotting could not be saved. Nothing was changed."
+        case .recordNotFound:
+            return "That spotting is no longer in the saved log."
+        }
+    }
+}
+
+protocol SpottingIndexing {
+    func index(_ entry: SpottingEntry) async
+    func delete(id: UUID) async
+    func deleteAll() async
+}
+
+struct LiveSpottingIndexer: SpottingIndexing {
+    func index(_ entry: SpottingEntry) async {
+        await TailTagSpotlightIndexer.index(entry)
+    }
+
+    func delete(id: UUID) async {
+        await TailTagSpotlightIndexer.deleteSpotting(with: id)
+    }
+
+    func deleteAll() async {
+        await TailTagSpotlightIndexer.deleteAllSpottingEntries()
+    }
+}
+
+protocol EntryLoading {
+    func fetchEntries() async throws -> [SpottingEntry]
+}
+
+struct ModelContainerEntryLoader: EntryLoading {
+    let container: ModelContainer
+
+    func fetchEntries() async throws -> [SpottingEntry] {
+        let reader = SpottingRecordReader(modelContainer: container)
+        return try await reader.fetchEntries()
+    }
+}
+
+@ModelActor
+actor SpottingRecordReader {
+    func fetchEntries() throws -> [SpottingEntry] {
+        modelContext.autosaveEnabled = false
+        let descriptor = FetchDescriptor<SpottingRecord>(
+            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
+        )
+        let records = try modelContext.fetch(descriptor)
+        return records.map(\.asEntry)
+    }
+}
+
 @MainActor
 class SpottingStore: ObservableObject {
     @Published var entries: [SpottingEntry] = []
     @Published var lastCloudKitSync: Date? = nil
+    @Published var userNotice: String?
 
     private var loadTask: Task<Void, Never>?
     private var needsReload = false
+    private var loadGeneration = 0
+    private var noticeSignatures: Set<String> = []
 
-    private var modelContext: ModelContext {
-        ModelContainer.tailTag.mainContext
-    }
+    let modelContext: ModelContext
+    private let spotlight: any SpottingIndexing
+    private let entryLoader: any EntryLoading
+    /// Test hook. Production saves go through `ModelContext.save()`.
+    var persistImplementation: ((ModelContext) throws -> Void)?
+    var lastIndexTask: Task<Void, Never>?
 
-    init() {
+    var modelContextForMigration: ModelContext { modelContext }
+
+    init(
+        modelContext: ModelContext? = nil,
+        spotlight: (any SpottingIndexing)? = nil,
+        entryLoader: (any EntryLoading)? = nil
+    ) {
+        let resolvedContext = modelContext ?? ModelContainer.tailTag.mainContext
+        resolvedContext.autosaveEnabled = false
+        self.modelContext = resolvedContext
+        self.spotlight = spotlight ?? LiveSpottingIndexer()
+        self.entryLoader = entryLoader ?? ModelContainerEntryLoader(container: resolvedContext.container)
         loadEntries()
 
-        // Refresh when CloudKit delivers remote store changes (low-level)
         NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange,
             object: nil,
@@ -30,7 +105,6 @@ class SpottingStore: ObservableObject {
             }
         }
 
-        // Observe SwiftData/NSPersistentCloudKitContainer sync events for status + refresh
         NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,
             object: nil,
@@ -48,84 +122,60 @@ class SpottingStore: ObservableObject {
         }
     }
 
+    func presentNotice(_ message: String, signature: String) {
+        guard noticeSignatures.insert(signature).inserted else { return }
+        userNotice = message
+    }
+
     // MARK: - Load
 
     func loadEntries() {
+        loadGeneration += 1
         needsReload = true
         guard loadTask == nil else { return }
 
-        let container = ModelContainer.tailTag
         loadTask = Task { [weak self] in
             guard let self else { return }
-            defer { loadTask = nil }
+            defer { self.loadTask = nil }
 
-            while needsReload {
-                needsReload = false
+            while self.needsReload {
+                self.needsReload = false
+                let generation = self.loadGeneration
                 do {
-                    let loadedEntries = try await Task.detached(priority: .userInitiated) {
-                        // Keep the context, models, and external photo reads off the main actor.
-                        // A fresh context also sees the latest saved and imported changes.
-                        let context = ModelContext(container)
-                        context.autosaveEnabled = false
-                        let descriptor = FetchDescriptor<SpottingRecord>(
-                            sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-                        )
-                        let records = try context.fetch(descriptor)
-                        // Keep entries whose photos haven't arrived from CloudKit yet.
-                        return records.map { $0.asEntry }
-                    }.value
-
-                    // A save or sync during the fetch requires a fresh snapshot.
-                    if !needsReload {
-                        entries = loadedEntries
+                    let loadedEntries = try await self.entryLoader.fetchEntries()
+                    // An older fetch must not replace a snapshot requested after it started.
+                    if !self.needsReload && generation == self.loadGeneration {
+                        self.entries = loadedEntries
                     }
                 } catch {
-                    // Preserve the last successful snapshot if a refresh fails.
-                    print("Error loading entries: \(error.localizedDescription)")
+                    // Keep the last successful snapshot. A failed refresh is not an empty log.
                 }
             }
         }
     }
 
-    private func saveContext() {
+    private func persist() throws {
         do {
-            try modelContext.save()
-            loadEntries()
+            if let persistImplementation {
+                try persistImplementation(modelContext)
+            } else {
+                try modelContext.save()
+            }
         } catch {
-            print("Error saving context: \(error.localizedDescription)")
+            modelContext.rollback()
+            throw SpottingPersistenceError.saveFailed
         }
     }
 
     // MARK: - Image Compression
 
-    static func compressImageData(_ data: Data, maxSizeKB: Int = 800) -> Data {
-        guard let image = UIImage(data: data) else { return data }
-
-        var compression: CGFloat = 0.8
-        var imageData = image.jpegData(compressionQuality: compression)
-        let maxBytes = maxSizeKB * 1024
-
-        while let d = imageData, d.count > maxBytes && compression > 0.1 {
-            compression -= 0.1
-            imageData = image.jpegData(compressionQuality: compression)
-        }
-
-        if let d = imageData, d.count > maxBytes {
-            let scale = sqrt(Double(maxBytes) / Double(d.count))
-            let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-            UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
-            image.draw(in: CGRect(origin: .zero, size: newSize))
-            let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
-            UIGraphicsEndImageContext()
-            imageData = resizedImage?.jpegData(compressionQuality: 0.7)
-        }
-
-        return imageData ?? data
+    nonisolated static func compressImageData(_ data: Data, maxSizeKB: Int = 800) -> Data {
+        PhotoByteCompressor.compress(data, maxSizeKB: maxSizeKB)
     }
 
     // MARK: - CRUD
 
-    func addEntry(_ entry: SpottingEntry) {
+    func addEntry(_ entry: SpottingEntry) throws {
         let record = SpottingRecord(
             id: entry.id,
             registration: entry.registration,
@@ -137,89 +187,103 @@ class SpottingStore: ObservableObject {
         )
         modelContext.insert(record)
 
-        for (index, photoData) in entry.photos.enumerated() {
+        for (index, photoData) in entry.photos.enumerated() where !photoData.isEmpty {
             let photo = PhotoRecord(data: SpottingStore.compressImageData(photoData), index: index)
             record.photoRecords.append(photo)
             modelContext.insert(photo)
         }
 
-        saveContext()
-        Task {
-            await TailTagSpotlightIndexer.index(entry)
+        try persist()
+        loadEntries()
+        let saved = entry
+        lastIndexTask = Task {
+            await spotlight.index(saved)
         }
     }
 
-    func deleteEntry(_ entry: SpottingEntry) {
+    func deleteEntry(_ entry: SpottingEntry) throws {
         let id = entry.id
         let descriptor = FetchDescriptor<SpottingRecord>(
             predicate: #Predicate { $0.id == id }
         )
-        do {
-            if let record = try modelContext.fetch(descriptor).first {
-                modelContext.delete(record)
-                saveContext()
-                Task {
-                    await TailTagSpotlightIndexer.deleteSpotting(with: entry.id)
-                }
-            }
-        } catch {
-            print("Error deleting entry: \(error.localizedDescription)")
+        let matches = try modelContext.fetch(descriptor)
+        guard let record = matches.first else {
+            throw SpottingPersistenceError.recordNotFound
+        }
+        // External photo bytes stay as future backing data until read. Rollback after a
+        // failed delete snapshots that placeholder and aborts.
+        for photo in record.photoRecords {
+            _ = photo.data
+        }
+        modelContext.delete(record)
+        try persist()
+        loadEntries()
+        lastIndexTask = Task {
+            await spotlight.delete(id: id)
         }
     }
 
-    func deleteSpotting(_ spotting: SpottingEntry) {
-        deleteEntry(spotting)
+    func deleteSpotting(_ spotting: SpottingEntry) throws {
+        try deleteEntry(spotting)
     }
 
-    func updateSpotting(_ updatedSpotting: SpottingEntry) {
+    func updateSpotting(_ updatedSpotting: SpottingEntry) throws {
         let id = updatedSpotting.id
         let descriptor = FetchDescriptor<SpottingRecord>(
             predicate: #Predicate { $0.id == id }
         )
-        do {
-            if let record = try modelContext.fetch(descriptor).first {
-                record.registration = updatedSpotting.registration
-                record.airline = updatedSpotting.airline
-                record.location = updatedSpotting.location
-                record.aircraftType = updatedSpotting.aircraftType
-                record.notes = updatedSpotting.notes
-                record.timestamp = updatedSpotting.timestamp
+        let matches = try modelContext.fetch(descriptor)
+        guard let record = matches.first else {
+            throw SpottingPersistenceError.recordNotFound
+        }
+        record.registration = updatedSpotting.registration
+        record.airline = updatedSpotting.airline
+        record.location = updatedSpotting.location
+        record.aircraftType = updatedSpotting.aircraftType
+        record.notes = updatedSpotting.notes
+        record.timestamp = updatedSpotting.timestamp
 
-                // Replace photos
-                for photo in record.photoRecords {
-                    modelContext.delete(photo)
-                }
-                record.photoRecords.removeAll()
+        for photo in record.photoRecords {
+            _ = photo.data
+            modelContext.delete(photo)
+        }
+        record.photoRecords.removeAll()
 
-                for (index, photoData) in updatedSpotting.photos.enumerated() {
-                    let photo = PhotoRecord(
-                        data: SpottingStore.compressImageData(photoData),
-                        index: index
-                    )
-                    record.photoRecords.append(photo)
-                    modelContext.insert(photo)
-                }
+        for (index, photoData) in updatedSpotting.photos.enumerated() where !photoData.isEmpty {
+            let photo = PhotoRecord(
+                data: SpottingStore.compressImageData(photoData),
+                index: index
+            )
+            record.photoRecords.append(photo)
+            modelContext.insert(photo)
+        }
 
-                saveContext()
-                Task {
-                    await TailTagSpotlightIndexer.index(updatedSpotting)
-                }
-            }
-        } catch {
-            print("Error updating entry: \(error.localizedDescription)")
+        try persist()
+        loadEntries()
+        let saved = updatedSpotting
+        lastIndexTask = Task {
+            await spotlight.index(saved)
         }
     }
 
-    func clearAllEntries() {
-        do {
-            try modelContext.delete(model: SpottingRecord.self)
-            try modelContext.save()
-            loadEntries()
-            Task {
-                await TailTagSpotlightIndexer.deleteAllSpottingEntries()
+    func clearAllEntries() throws {
+        let records = try modelContext.fetch(FetchDescriptor<SpottingRecord>())
+        for record in records {
+            for photo in record.photoRecords {
+                _ = photo.data
             }
-        } catch {
-            print("Error clearing entries: \(error.localizedDescription)")
+            modelContext.delete(record)
+        }
+        try persist()
+        loadEntries()
+        lastIndexTask = Task {
+            await spotlight.deleteAll()
+        }
+    }
+
+    func waitUntilIdle() async {
+        while loadTask != nil {
+            await Task.yield()
         }
     }
 

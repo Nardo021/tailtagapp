@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		A1DATA00000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B190D2E02E0B97A600EB711C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B190D2E72E0B97A600EB711C;
+			remoteInfo = TailTag;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		A1DATA000000000000000002 /* TailTagTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TailTagTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B190D2E82E0B97A600EB711C /* TailTag.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TailTag.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +32,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		A1DATA000000000000000006 /* TailTagTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TailTagTests;
+			sourceTree = "<group>";
+		};
 		B190D2EA2E0B97A600EB711C /* TailTag */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +48,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A1DATA000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B190D2E52E0B97A600EB711C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				B190D2EA2E0B97A600EB711C /* TailTag */,
+				A1DATA000000000000000006 /* TailTagTests */,
 				B190D2E92E0B97A600EB711C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				B190D2E82E0B97A600EB711C /* TailTag.app */,
+				A1DATA000000000000000002 /* TailTagTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +86,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A1DATA000000000000000001 /* TailTagTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1DATA000000000000000007 /* Build configuration list for PBXNativeTarget "TailTagTests" */;
+			buildPhases = (
+				A1DATA000000000000000003 /* Sources */,
+				A1DATA000000000000000004 /* Frameworks */,
+				A1DATA000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1DATA00000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A1DATA000000000000000006 /* TailTagTests */,
+			);
+			name = TailTagTests;
+			packageProductDependencies = (
+			);
+			productName = TailTagTests;
+			productReference = A1DATA000000000000000002 /* TailTagTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		B190D2E72E0B97A600EB711C /* TailTag */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B190D2F32E0B97A800EB711C /* Build configuration list for PBXNativeTarget "TailTag" */;
@@ -93,10 +141,14 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					B190D2E72E0B97A600EB711C = {
-						CreatedOnToolsVersion = 26.0;
-					};
+				A1DATA000000000000000001 = {
+					CreatedOnToolsVersion = 26.0;
+					TestTargetID = B190D2E72E0B97A600EB711C;
 				};
+				B190D2E72E0B97A600EB711C = {
+					CreatedOnToolsVersion = 26.0;
+				};
+			};
 			};
 			buildConfigurationList = B190D2E32E0B97A600EB711C /* Build configuration list for PBXProject "TailTag" */;
 			developmentRegion = en;
@@ -113,11 +165,19 @@
 			projectRoot = "";
 			targets = (
 				B190D2E72E0B97A600EB711C /* TailTag */,
+				A1DATA000000000000000001 /* TailTagTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A1DATA000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B190D2E62E0B97A600EB711C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +188,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A1DATA000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B190D2E42E0B97A600EB711C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -136,6 +203,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1DATA00000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B190D2E72E0B97A600EB711C /* TailTag */;
+			targetProxy = A1DATA00000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B190D2F12E0B97A800EB711C /* Debug */ = {
@@ -261,6 +336,46 @@
 			};
 			name = Release;
 		};
+		A1DATA000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Josh.TailTagTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TailTag.app/TailTag";
+			};
+			name = Debug;
+		};
+		A1DATA000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Josh.TailTagTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TailTag.app/TailTag";
+			};
+			name = Release;
+		};
 		B190D2F42E0B97A800EB711C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -351,6 +466,15 @@
 			buildConfigurations = (
 				B190D2F12E0B97A800EB711C /* Debug */,
 				B190D2F22E0B97A800EB711C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1DATA000000000000000007 /* Build configuration list for PBXNativeTarget "TailTagTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1DATA000000000000000008 /* Debug */,
+				A1DATA000000000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

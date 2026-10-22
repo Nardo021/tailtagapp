@@ -15,117 +15,17 @@ struct SpottingDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
     @State private var showingDeleteAlert = false
+    @State private var deleteErrorMessage: String?
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
-                    // Photo Gallery with TabView
-                    TabView {
-                        ForEach(Array(entry.photos.enumerated()), id: \.offset) { index, photoData in
-                            if let uiImage = UIImage(data: photoData), !photoData.isEmpty {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(maxHeight: 300)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            } else {
-                                // Placeholder with gradient
-                                LinearGradient(
-                                    colors: [appSettings.accentColor.opacity(0.3), appSettings.accentColor.opacity(0.6)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                                .frame(height: 200)
-                                .overlay {
-                                    Image(systemName: "airplane")
-                                        .font(.system(size: 60))
-                                        .foregroundStyle(.white.opacity(0.7))
-                                }
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                        }
-                    }
-                    .tabViewStyle(.page)
-                    .frame(height: 320)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    
-                    // Details List
-                    VStack(spacing: 0) {
-                        // Registration
-                        DetailRowView(
-                            icon: "airplane",
-                            title: "Registration",
-                            value: entry.registration,
-                            iconColor: appSettings.accentColor
-                        )
-                        
-                        Divider()
-                            .padding(.leading, 60)
-                        
-                        // Airline
-                        DetailRowView(
-                            icon: "building.2",
-                            title: "Airline",
-                            value: entry.airline,
-                            iconColor: appSettings.accentColor
-                        )
-                        
-                        Divider()
-                            .padding(.leading, 60)
-                        
-                        // Location
-                        DetailRowView(
-                            icon: "location",
-                            title: "Location",
-                            value: entry.location,
-                            iconColor: appSettings.accentColor
-                        )
-                        
-                        if let aircraftType = entry.aircraftType, !aircraftType.isEmpty {
-                            Divider()
-                                .padding(.leading, 60)
-                            
-                            DetailRowView(
-                                icon: "airplane.departure",
-                                title: "Aircraft Type",
-                                value: aircraftType,
-                                iconColor: appSettings.accentColor
-                            )
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 60)
-                        
-                        // Date & Time
-                        DetailRowView(
-                            icon: "calendar",
-                            title: "Spotted",
-                            value: DateFormatter.spottingDetail.string(from: entry.timestamp),
-                            iconColor: appSettings.accentColor
-                        )
-                        
-                        if let notes = entry.notes, !notes.isEmpty {
-                            Divider()
-                                .padding(.leading, 60)
-                            
-                            DetailRowView(
-                                icon: "note.text",
-                                title: "Notes",
-                                value: notes,
-                                iconColor: appSettings.accentColor,
-                                isMultiline: true
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
+                    photoSection
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+
+                    detailsSection
                 }
             }
             .navigationTitle("Aircraft Details")
@@ -162,11 +62,23 @@ struct SpottingDetailView: View {
         .alert("Delete Spotting", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                spottingStore.deleteSpotting(entry)
-                dismiss()
+                do {
+                    try spottingStore.deleteSpotting(entry)
+                    dismiss()
+                } catch {
+                    deleteErrorMessage = error.localizedDescription
+                }
             }
         } message: {
             Text("This will permanently delete this spotting. This action cannot be undone.")
+        }
+        .alert("Could Not Delete", isPresented: Binding(
+            get: { deleteErrorMessage != nil },
+            set: { if !$0 { deleteErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(deleteErrorMessage ?? "")
         }
         .userActivity("com.Josh.TailTag.viewingSpotting", element: TailTagSpottingEntity(entry: entry)) { spottingEntity, activity in
             activity.title = "Viewing \(entry.registration)"
@@ -174,6 +86,123 @@ struct SpottingDetailView: View {
                 activity.appEntityIdentifier = EntityIdentifier(for: spottingEntity)
             }
         }
+    }
+
+    @ViewBuilder
+    private var photoSection: some View {
+        if entry.photos.isEmpty {
+            photoPlaceholder
+                .frame(maxWidth: .infinity)
+        } else {
+            TabView {
+                ForEach(Array(entry.photos.enumerated()), id: \.offset) { _, photoData in
+                    photoPage(photoData)
+                }
+            }
+            .tabViewStyle(.page)
+            .frame(height: 320)
+        }
+    }
+
+    @ViewBuilder
+    private func photoPage(_ photoData: Data) -> some View {
+        if let uiImage = UIImage(data: photoData), !photoData.isEmpty {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxHeight: 300)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        } else {
+            photoPlaceholder
+        }
+    }
+
+    private var photoPlaceholder: some View {
+        LinearGradient(
+            colors: [appSettings.accentColor.opacity(0.3), appSettings.accentColor.opacity(0.6)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .frame(height: 200)
+        .overlay {
+            Image(systemName: "airplane")
+                .font(.system(size: 60))
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var detailsSection: some View {
+        VStack(spacing: 0) {
+            DetailRowView(
+                icon: "airplane",
+                title: "Registration",
+                value: entry.registration,
+                iconColor: appSettings.accentColor
+            )
+
+            Divider()
+                .padding(.leading, 60)
+
+            DetailRowView(
+                icon: "building.2",
+                title: "Airline",
+                value: entry.airline,
+                iconColor: appSettings.accentColor
+            )
+
+            Divider()
+                .padding(.leading, 60)
+
+            DetailRowView(
+                icon: "location",
+                title: "Location",
+                value: entry.location,
+                iconColor: appSettings.accentColor
+            )
+
+            if let aircraftType = entry.aircraftType, !aircraftType.isEmpty {
+                Divider()
+                    .padding(.leading, 60)
+
+                DetailRowView(
+                    icon: "airplane.departure",
+                    title: "Aircraft Type",
+                    value: aircraftType,
+                    iconColor: appSettings.accentColor
+                )
+            }
+
+            Divider()
+                .padding(.leading, 60)
+
+            DetailRowView(
+                icon: "calendar",
+                title: "Spotted",
+                value: DateFormatter.spottingDetail.string(from: entry.timestamp),
+                iconColor: appSettings.accentColor
+            )
+
+            if let notes = entry.notes, !notes.isEmpty {
+                Divider()
+                    .padding(.leading, 60)
+
+                DetailRowView(
+                    icon: "note.text",
+                    title: "Notes",
+                    value: notes,
+                    iconColor: appSettings.accentColor,
+                    isMultiline: true
+                )
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 40)
     }
 }
 

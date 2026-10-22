@@ -1,93 +1,88 @@
 package com.josh.tailtag.data
 
-import android.content.ContentResolver
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import com.josh.tailtag.model.SpottingEntry
-import org.json.JSONArray
-import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
+import java.io.IOException
 
-class TailTagRepository(private val context: Context) {
-    private val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-    private val photoDirectory = File(context.filesDir, "spotting_photos").apply { mkdirs() }
+class TailTagRepository(context: Context) {
+    private val photoDirectory = ManagedPhotoDirectory(File(context.filesDir, "spotting_photos"))
+    private val persistence = SpottingPersistence(
+        store = SharedPreferencesKeyValueStore(context.getSharedPreferences(SpottingPersistence.PREFERENCES, Context.MODE_PRIVATE)),
+        photos = photoDirectory,
+    )
+    private val importer = AndroidPhotoImporter(context)
 
-    fun loadEntries(): List<SpottingEntry> = runCatching {
-        val raw = preferences.getString(ENTRIES_KEY, null) ?: return emptyList()
-        val array = JSONArray(raw)
-        buildList {
-            for (index in 0 until array.length()) {
-                val item = array.getJSONObject(index)
-                add(
-                    SpottingEntry(
-                        id = item.getString("id"),
-                        photos = item.getJSONArray("photos").let { photos ->
-                            buildList {
-                                for (photoIndex in 0 until photos.length()) add(photos.getString(photoIndex))
-                            }
-                        },
-                        registration = item.getString("registration"),
-                        airline = item.getString("airline"),
-                        location = item.getString("location"),
-                        aircraftType = item.optString("aircraftType").takeUnless { it.isBlank() },
-                        notes = item.optString("notes").takeUnless { it.isBlank() },
-                        timestamp = item.getLong("timestamp"),
-                    ),
-                )
-            }
+    suspend fun load(): LoadOutcome = persistence.load()
+
+    suspend fun add(
+        registration: String,
+        airline: String,
+        location: String,
+        aircraftType: String?,
+        notes: String?,
+        timestamp: Long,
+        photoUris: List<Uri>,
+    ): SaveResult = persistence.add(
+        registration = registration,
+        airline = airline,
+        location = location,
+        aircraftType = aircraftType,
+        notes = notes,
+        timestamp = timestamp,
+        photoSources = photoUris.map { uri -> PhotoBytesSource { importer.read(uri) } },
+    )
+
+    suspend fun update(
+        id: String,
+        registration: String,
+        airline: String,
+        location: String,
+        aircraftType: String?,
+        notes: String?,
+        timestamp: Long,
+        remainingPhotoPaths: List<String>,
+        newPhotoUris: List<Uri>,
+    ): SaveResult = persistence.update(
+        id = id,
+        registration = registration,
+        airline = airline,
+        location = location,
+        aircraftType = aircraftType,
+        notes = notes,
+        timestamp = timestamp,
+        remainingPhotoPaths = remainingPhotoPaths,
+        newPhotoSources = newPhotoUris.map { uri -> PhotoBytesSource { importer.read(uri) } },
+    )
+
+    suspend fun delete(id: String): SaveResult = persistence.delete(id)
+
+    suspend fun reset(): SaveResult = persistence.reset()
+
+    suspend fun restoreBackup(): LoadOutcome = persistence.restoreBackup()
+}
+
+private class AndroidPhotoImporter(private val context: Context) {
+    @Throws(IOException::class)
+    fun read(uri: Uri): ByteArray {
+        val bytes = context.contentResolver.openInputStream(uri)?.use { input -> input.readBytes() }
+            ?: throw IOException("The photo could not be read.")
+        if (bytes.isEmpty()) throw IOException("The photo could not be read.")
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return bytes
+        return try {
+            val scaled = scale(bitmap, 1800)
+            val output = ByteArrayOutputStream()
+            val wrote = scaled.compress(Bitmap.CompressFormat.JPEG, 82, output)
+            if (scaled !== bitmap) scaled.recycle()
+            bitmap.recycle()
+            val compressed = output.toByteArray()
+            if (!wrote || compressed.isEmpty()) bytes else compressed
+        } catch (error: IOException) {
+            bytes
         }
-    }.getOrDefault(emptyList())
-
-    fun saveEntries(entries: List<SpottingEntry>) {
-        val array = JSONArray()
-        entries.forEach { entry ->
-            array.put(
-                JSONObject().apply {
-                    put("id", entry.id)
-                    put("photos", JSONArray(entry.photos))
-                    put("registration", entry.registration)
-                    put("airline", entry.airline)
-                    put("location", entry.location)
-                    put("aircraftType", entry.aircraftType.orEmpty())
-                    put("notes", entry.notes.orEmpty())
-                    put("timestamp", entry.timestamp)
-                },
-            )
-        }
-        preferences.edit().putString(ENTRIES_KEY, array.toString()).apply()
-    }
-
-    fun copyPhoto(uri: Uri): String? = runCatching {
-        val resolver = context.contentResolver
-        val source = resolver.openInputStream(uri) ?: return null
-        source.use { input ->
-            val bytes = input.readBytes()
-            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            val destination = File(photoDirectory, "${UUID.randomUUID()}.jpg")
-            if (bitmap == null) {
-                destination.writeBytes(bytes)
-            } else {
-                val scaled = scale(bitmap, 1800)
-                FileOutputStream(destination).use { output ->
-                    scaled.compress(Bitmap.CompressFormat.JPEG, 82, output)
-                }
-                if (scaled !== bitmap) scaled.recycle()
-                bitmap.recycle()
-            }
-            destination.absolutePath
-        }
-    }.getOrNull()
-
-    fun deletePhoto(path: String) {
-        if (path.startsWith(photoDirectory.absolutePath)) File(path).delete()
-    }
-
-    fun deleteAllPhotos() {
-        photoDirectory.listFiles()?.forEach(File::delete)
     }
 
     private fun scale(bitmap: Bitmap, maxDimension: Int): Bitmap {
@@ -100,10 +95,5 @@ class TailTagRepository(private val context: Context) {
             (bitmap.height * ratio).toInt().coerceAtLeast(1),
             true,
         )
-    }
-
-    companion object {
-        private const val PREFERENCES = "tailtag_data"
-        private const val ENTRIES_KEY = "entries"
     }
 }

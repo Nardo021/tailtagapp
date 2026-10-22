@@ -1,4 +1,5 @@
 import CloudKit
+import SwiftData
 import SwiftUI
 
 struct iCloudSyncSettingsView: View {
@@ -46,7 +47,7 @@ struct iCloudSyncSettingsView: View {
             Text("iCloud")
         } footer: {
             Text(appSettings.iCloudSyncEnabled
-                ? "Your spotting data syncs across all devices signed into the same iCloud account. A restart is required to apply changes."
+                ? "iCloud sync uses this device's saved records after TailTag is opened again. A saved spotting is not the same as a finished upload to every device."
                 : "Enable to back up and sync your spottings across all your Apple devices via iCloud.")
         }
         .alert("Restart Required", isPresented: $showRestartAlert) {
@@ -62,11 +63,26 @@ struct iCloudSyncSettingsView: View {
         do {
             let status = try await CKContainer(identifier: "iCloud.com.Josh.TailTag").accountStatus()
             switch status {
-            case .available:        return .available
-            case .noAccount:        return .noAccount
-            case .restricted:       return .restricted
-            case .temporarilyUnavailable: return .temporarilyUnavailable
-            default:                return .unknown
+            case .available:
+                switch ModelContainer.activeIdentity {
+                case .cloudKit:
+                    return .available
+                case .local(_, let cloudKitFallback):
+                    if cloudKitFallback {
+                        return .localFallback("iCloud storage could not be opened. This launch is keeping records on this device, and they were not marked as migrated.")
+                    }
+                    return .localFallback("iCloud sync starts the next time TailTag is opened. An available account does not mean records have synced.")
+                }
+            case .noAccount:
+                return .noAccount
+            case .restricted:
+                return .restricted
+            case .couldNotDetermine:
+                return .unknown
+            case .temporarilyUnavailable:
+                return .temporarilyUnavailable
+            @unknown default:
+                return .unknown
             }
         } catch {
             return .containerError(error.localizedDescription)
@@ -81,6 +97,7 @@ enum CloudKitSyncStatus {
     case restricted
     case temporarilyUnavailable
     case containerError(String)
+    case localFallback(String)
 
     var iconName: String {
         switch self {
@@ -89,6 +106,7 @@ enum CloudKitSyncStatus {
         case .restricted:              return "lock.icloud"
         case .temporarilyUnavailable:  return "exclamationmark.icloud"
         case .containerError:          return "xmark.icloud"
+        case .localFallback:           return "icloud.slash"
         case .unknown:                 return "icloud"
         }
     }
@@ -97,18 +115,19 @@ enum CloudKitSyncStatus {
         switch self {
         case .available:               return .green
         case .noAccount, .restricted, .containerError: return .red
-        case .temporarilyUnavailable:  return .orange
+        case .temporarilyUnavailable, .localFallback: return .orange
         case .unknown:                 return .secondary
         }
     }
 
     var title: String {
         switch self {
-        case .available:               return "Connected"
+        case .available:               return "iCloud Available"
         case .noAccount:               return "Not Signed In"
         case .restricted:              return "Restricted"
         case .temporarilyUnavailable:  return "Temporarily Unavailable"
         case .containerError:          return "Container Error"
+        case .localFallback:           return "On This Device"
         case .unknown:                 return "Checking..."
         }
     }
@@ -116,7 +135,9 @@ enum CloudKitSyncStatus {
     var detail: String {
         switch self {
         case .available:
-            return "Syncing with iCloud"
+            return "Saves stay on this device first and upload when the network allows. A save does not mean other devices already have it."
+        case .localFallback(let message):
+            return message
         case .noAccount:
             return "Sign in to iCloud in Settings to enable sync"
         case .restricted:

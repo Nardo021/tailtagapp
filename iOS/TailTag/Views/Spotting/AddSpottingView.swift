@@ -18,6 +18,8 @@ struct AddSpottingView: View {
     @State private var isDateFromPhoto = false
     @State private var isRegistrationFromPhoto = false
     @State private var isAirlineFromPhoto = false
+    @State private var isSaving = false
+    @State private var saveErrorMessage: String?
     @State private var isProcessingImage = false
     
     private let textDetector = AircraftTextDetector()
@@ -201,19 +203,28 @@ struct AddSpottingView: View {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(isSaving ? "Saving" : "Save") {
                         saveSpotting()
                     }
-                    .disabled(!canSave)
-                    .foregroundStyle(canSave ? appSettings.accentColor : .secondary)
+                    .disabled(!canSave || isSaving)
+                    .foregroundStyle(canSave && !isSaving ? appSettings.accentColor : .secondary)
                 }
+            }
+            .alert("Could Not Save", isPresented: Binding(
+                get: { saveErrorMessage != nil },
+                set: { if !$0 { saveErrorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(saveErrorMessage ?? "")
             }
         }
     }
     
     private func saveSpotting() {
+        guard !isSaving else { return }
         guard !photosData.isEmpty else {
-            print("Error: Cannot save entry without photos")
+            saveErrorMessage = "Add a photo before saving this spotting."
             return
         }
         
@@ -227,9 +238,13 @@ struct AddSpottingView: View {
             timestamp: timestamp
         )
         
-        Task { @MainActor in
-            spottingStore.addEntry(entry)
+        isSaving = true
+        do {
+            try spottingStore.addEntry(entry)
             dismiss()
+        } catch {
+            isSaving = false
+            saveErrorMessage = error.localizedDescription
         }
     }
     
