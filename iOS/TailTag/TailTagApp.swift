@@ -1,4 +1,5 @@
 import AppIntents
+import AviationCatalog
 import SwiftUI
 import SwiftData
 
@@ -22,6 +23,9 @@ struct TailTagApp: App {
                     await SpottingMigrator.migrateToCloudKitIfNeeded(store: spottingStore)
 
                     TailTagShortcutsProvider.updateAppShortcutParameters()
+                    if AviationCatalogBridge.supportedSchemaVersion != AviationCatalogLoader.supportedSchemaVersion {
+                        print("Aviation catalog schema is unavailable")
+                    }
                     do {
                         try await TailTagSpotlightIndexer.indexAllSpottingEntries()
                     } catch {

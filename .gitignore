@@ -29,3 +29,11 @@ DerivedData/
 
 # Swift package build output
 .build/
+
+# Python catalog tools
+__pycache__/
+*.pyc
+*.partial.json
+
+# Local pull-request notes are not project documentation
+PR_DESCRIPTION_CATALOG.md

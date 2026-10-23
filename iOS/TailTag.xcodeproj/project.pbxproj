@@ -10,6 +10,10 @@
 		B190D2E82E0B97A600EB711C /* TailTag.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TailTag.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXBuildFile section */
+		C0A7A10C0000000000000003 /* AviationCatalog in Frameworks */ = {isa = PBXBuildFile; productRef = C0A7A10C0000000000000002 /* AviationCatalog */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		B18ED8AB2E0BB80600A87088 /* Exceptions for "TailTag" folder in "TailTag" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0A7A10C0000000000000003 /* AviationCatalog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = TailTag;
 			packageProductDependencies = (
+				C0A7A10C0000000000000002 /* AviationCatalog */,
 			);
 			productName = TailTag;
 			productReference = B190D2E82E0B97A600EB711C /* TailTag.app */;
@@ -111,6 +117,9 @@
 			productRefGroup = B190D2E92E0B97A600EB711C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (
+				C0A7A10C0000000000000001 /* XCLocalSwiftPackageReference "AviationCatalogCore" */,
+			);
 			targets = (
 				B190D2E72E0B97A600EB711C /* TailTag */,
 			);
@@ -365,6 +374,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C0A7A10C0000000000000001 /* XCLocalSwiftPackageReference "AviationCatalogCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = AviationCatalogCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C0A7A10C0000000000000002 /* AviationCatalog */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A7A10C0000000000000001 /* XCLocalSwiftPackageReference "AviationCatalogCore" */;
+			productName = AviationCatalog;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B190D2E02E0B97A600EB711C /* Project object */;
 }

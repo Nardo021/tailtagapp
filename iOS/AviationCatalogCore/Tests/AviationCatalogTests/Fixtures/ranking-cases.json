@@ -1,0 +1,329 @@
+{
+  "cases": [
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:qantas",
+        "fixture:prefix-carrier"
+      ],
+      "limit": 10,
+      "query": "QF",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:prefix-carrier",
+        "fixture:qantas"
+      ],
+      "limit": 10,
+      "query": "QFA",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:qantas",
+        "fixture:qantaslink"
+      ],
+      "limit": 10,
+      "query": "Qantas",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:qantas",
+        "fixture:qantaslink"
+      ],
+      "limit": 10,
+      "query": "  qantas  ",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:qantas"
+      ],
+      "limit": 10,
+      "query": "qantas airways",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:qantas",
+        "fixture:qantaslink"
+      ],
+      "limit": 10,
+      "query": "QANTAS",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:raaf"
+      ],
+      "limit": 10,
+      "query": "RAAF",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "fixture:raaf"
+      ],
+      "limit": 10,
+      "query": "Royal Australian",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [],
+      "limit": 10,
+      "query": "not-an-airline",
+      "resolution": "unmatched",
+      "unmatchedText": "not-an-airline"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [],
+      "limit": 10,
+      "query": "   ",
+      "resolution": "blank"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [],
+      "limit": 10,
+      "query": "A",
+      "resolution": "unmatched",
+      "unmatchedText": "A"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:a350-900"
+      ],
+      "limit": 10,
+      "query": "A359",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:a320-200",
+        "fixture:a320-family"
+      ],
+      "limit": 10,
+      "query": "A320",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:a350-900"
+      ],
+      "limit": 10,
+      "query": "A350",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:b787-9"
+      ],
+      "limit": 10,
+      "query": "787-9",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:b787-9"
+      ],
+      "limit": 10,
+      "query": "B789",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:a320-200",
+        "fixture:a320-family",
+        "fixture:a350-900"
+      ],
+      "limit": 10,
+      "query": "Airbus",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:b787-9"
+      ],
+      "limit": 10,
+      "query": "Boeing",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:dragon"
+      ],
+      "limit": 10,
+      "query": "Dragon",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [],
+      "limit": 10,
+      "query": "no-such-aircraft",
+      "resolution": "unmatched",
+      "unmatchedText": "no-such-aircraft"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:sydney"
+      ],
+      "limit": 10,
+      "query": "SYD",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:sydney"
+      ],
+      "limit": 10,
+      "query": "YSSY",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:heathrow"
+      ],
+      "limit": 10,
+      "query": "LHR",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:heathrow"
+      ],
+      "limit": 10,
+      "query": "EGLL",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:heathrow"
+      ],
+      "limit": 10,
+      "query": "Heathrow",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [],
+      "limit": 10,
+      "query": "row",
+      "resolution": "unmatched",
+      "unmatchedText": "row"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:sydney"
+      ],
+      "limit": 10,
+      "query": "Sydney",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:malmo"
+      ],
+      "limit": 10,
+      "query": "Malmo",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:malmo"
+      ],
+      "limit": 10,
+      "query": "Malmö",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:frogs"
+      ],
+      "limit": 10,
+      "query": "YFGS",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:epps"
+      ],
+      "limit": 10,
+      "query": "00AL",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:mildenhall"
+      ],
+      "limit": 10,
+      "query": "Mildenhall",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:heathrow"
+      ],
+      "limit": 10,
+      "query": "Londres",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [],
+      "limit": 10,
+      "query": "zzzz-not-a-place",
+      "resolution": "unmatched",
+      "unmatchedText": "zzzz-not-a-place"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "fixture:sydney"
+      ],
+      "limit": 1,
+      "query": "International",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "fixture:a320-200"
+      ],
+      "limit": 1,
+      "query": "Airbus",
+      "resolution": "matches"
+    }
+  ]
+}

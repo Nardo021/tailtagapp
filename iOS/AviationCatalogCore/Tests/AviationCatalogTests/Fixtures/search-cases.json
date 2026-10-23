@@ -1,0 +1,332 @@
+{
+  "cases": [
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "wikidata:Q32491",
+        "wikidata:Q781323",
+        "wikidata:Q869352",
+        "wikidata:Q1022138",
+        "wikidata:Q1347762"
+      ],
+      "limit": 5,
+      "query": "Qantas",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "wikidata:Q32491",
+        "wikidata:Q781323",
+        "wikidata:Q869352",
+        "wikidata:Q1022138",
+        "wikidata:Q1347762"
+      ],
+      "limit": 5,
+      "query": "qantas",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "wikidata:Q1022138",
+        "wikidata:Q116275644",
+        "wikidata:Q1347762",
+        "wikidata:Q32491",
+        "wikidata:Q499533"
+      ],
+      "limit": 5,
+      "query": "QF",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "wikidata:Q32491",
+        "wikidata:Q869352"
+      ],
+      "limit": 5,
+      "query": "QFA",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "wikidata:Q32491",
+        "wikidata:Q781323",
+        "wikidata:Q869352",
+        "wikidata:Q1022138",
+        "wikidata:Q1347762"
+      ],
+      "limit": 5,
+      "query": "  Qantas  ",
+      "resolution": "ambiguous"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q2917066",
+        "wikidata:Q378243",
+        "wikidata:Q6498",
+        "wikidata:Q1022856",
+        "wikidata:Q118581491"
+      ],
+      "limit": 5,
+      "query": "Airbus",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q6484",
+        "wikidata:Q65280198",
+        "wikidata:Q92162002",
+        "wikidata:Q2465699"
+      ],
+      "limit": 5,
+      "query": "A350",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q92162002"
+      ],
+      "limit": 5,
+      "query": "A350-900",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q106340166",
+        "wikidata:Q107015269",
+        "wikidata:Q1136025",
+        "wikidata:Q1193752",
+        "wikidata:Q119439748"
+      ],
+      "limit": 5,
+      "query": "Boeing",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q15111575"
+      ],
+      "limit": 5,
+      "query": "787-9",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q15111575"
+      ],
+      "limit": 5,
+      "query": "B789",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:1579",
+        "ourairports:1882",
+        "ourairports:27130",
+        "ourairports:310099",
+        "ourairports:313852"
+      ],
+      "limit": 5,
+      "query": "Sydney",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:27145",
+        "ourairports:313735",
+        "ourairports:12176",
+        "ourairports:1579",
+        "ourairports:1882"
+      ],
+      "limit": 5,
+      "query": "SYD",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:27145"
+      ],
+      "limit": 5,
+      "query": "YSSY",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:24825",
+        "ourairports:2434",
+        "ourairports:553886"
+      ],
+      "limit": 5,
+      "query": "Heathrow",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:2434"
+      ],
+      "limit": 5,
+      "query": "LHR",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:2434"
+      ],
+      "limit": 5,
+      "query": "EGLL",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:350216"
+      ],
+      "limit": 5,
+      "query": "Frogs Hollow",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:350216"
+      ],
+      "limit": 5,
+      "query": "YFGS",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:2488"
+      ],
+      "limit": 5,
+      "query": "Mildenhall",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:2488",
+        "ourairports:11372",
+        "ourairports:16721",
+        "ourairports:16722",
+        "ourairports:16840"
+      ],
+      "limit": 5,
+      "query": "EGUN",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:323445",
+        "ourairports:346014",
+        "ourairports:6525",
+        "ourairports:307623",
+        "ourairports:307624"
+      ],
+      "limit": 5,
+      "query": "Epps",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:6525",
+        "ourairports:43626"
+      ],
+      "limit": 5,
+      "query": "00AL",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [],
+      "limit": 5,
+      "query": "zzzz-not-an-operator",
+      "resolution": "unmatched",
+      "unmatchedText": "zzzz-not-an-operator"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [],
+      "limit": 5,
+      "query": "zzzz-not-an-aircraft",
+      "resolution": "unmatched",
+      "unmatchedText": "zzzz-not-an-aircraft"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [],
+      "limit": 5,
+      "query": "zzzz-not-a-place",
+      "resolution": "unmatched",
+      "unmatchedText": "zzzz-not-a-place"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [],
+      "limit": 5,
+      "query": "   ",
+      "resolution": "blank"
+    },
+    {
+      "dataset": "airports",
+      "expectedIds": [
+        "ourairports:10179",
+        "ourairports:16768",
+        "ourairports:18271"
+      ],
+      "limit": 3,
+      "query": "International",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "operators",
+      "expectedIds": [
+        "wikidata:Q10233440"
+      ],
+      "limit": 5,
+      "query": "Imperial Iranian Air Force",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q92162002"
+      ],
+      "limit": 5,
+      "query": "A359",
+      "resolution": "matches"
+    },
+    {
+      "dataset": "aircraft",
+      "expectedIds": [
+        "wikidata:Q1141409",
+        "wikidata:Q1171983",
+        "wikidata:Q1171993",
+        "wikidata:Q1474251",
+        "wikidata:Q16911659"
+      ],
+      "limit": 5,
+      "query": "Falcon",
+      "resolution": "matches"
+    }
+  ],
+  "militaryOperatorId": "wikidata:Q10233440"
+}

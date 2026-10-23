@@ -1,0 +1,83 @@
+{
+  "license": "CC0 1.0",
+  "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+  "note": "These Wikidata items are aircraft models or families that the English-Wikipedia import missed because they have no English Wikipedia sitelink. Only labels, English aliases, and statements are imported. Wikipedia article text is not copied. No ICAO type designator is asserted.",
+  "records": [
+    {
+      "aliases": [
+        "787-8",
+        "B787-8",
+        "B788"
+      ],
+      "families": [
+        "Q6428"
+      ],
+      "id": "Q57439868",
+      "instanceOf": [
+        "Q15056995",
+        "Q15056993"
+      ],
+      "label": "Boeing 787-8",
+      "manufacturers": [
+        "Q66"
+      ]
+    },
+    {
+      "aliases": [
+        "787-9",
+        "B787-9",
+        "Boeing 787-9 Dreamliner",
+        "787-9 Dreamliner",
+        "B789"
+      ],
+      "families": [
+        "Q6428"
+      ],
+      "id": "Q15111575",
+      "instanceOf": [
+        "Q15056995"
+      ],
+      "label": "Boeing 787-9",
+      "manufacturers": []
+    },
+    {
+      "aliases": [
+        "787-10",
+        "B787-10",
+        "B78X"
+      ],
+      "families": [
+        "Q6428"
+      ],
+      "id": "Q57440517",
+      "instanceOf": [
+        "Q15056995"
+      ],
+      "label": "Boeing 787-10",
+      "manufacturers": []
+    },
+    {
+      "aliases": [
+        "737 MAX 8",
+        "Boeing 737-8 MAX",
+        "B737-8",
+        "737-8",
+        "Boeing 737-8",
+        "B38M"
+      ],
+      "families": [
+        "Q139289"
+      ],
+      "id": "Q106340166",
+      "instanceOf": [
+        "Q15056993"
+      ],
+      "label": "Boeing 737 MAX 8",
+      "manufacturers": [
+        "Q66"
+      ]
+    }
+  ],
+  "retrieved": "2026-10-23",
+  "source": "https://www.wikidata.org/wiki/Wikidata:Licensing"
+}

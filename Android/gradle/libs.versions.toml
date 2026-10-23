@@ -6,6 +6,7 @@ composeBom = "2025.08.01"
 exifinterface = "1.4.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
+orgJson = "20240303"
 espressoCore = "3.7.0"
 kotlin = "2.2.10"
 lifecycle = "2.9.2"
@@ -30,6 +31,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 

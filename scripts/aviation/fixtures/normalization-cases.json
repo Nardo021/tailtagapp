@@ -1,0 +1,134 @@
+{
+  "cases": [
+    {
+      "compact": "qantas",
+      "input": "Qantas",
+      "normalized": "qantas"
+    },
+    {
+      "compact": "qf",
+      "input": "  QF  ",
+      "normalized": "qf"
+    },
+    {
+      "compact": "a350900",
+      "input": "A350-900",
+      "normalized": "a350 900"
+    },
+    {
+      "compact": "malmo",
+      "input": "Malmö",
+      "normalized": "malmo"
+    },
+    {
+      "compact": "saopaulo",
+      "input": "São Paulo",
+      "normalized": "sao paulo"
+    },
+    {
+      "compact": "zurich",
+      "input": "Zürich",
+      "normalized": "zurich"
+    },
+    {
+      "compact": "istanbul",
+      "input": "İstanbul",
+      "normalized": "istanbul"
+    },
+    {
+      "compact": "strasse",
+      "input": "straße",
+      "normalized": "strasse"
+    },
+    {
+      "compact": "ærø",
+      "input": "Ærø",
+      "normalized": "ærø"
+    },
+    {
+      "compact": "nunoa",
+      "input": "Ñuñoa",
+      "normalized": "nunoa"
+    },
+    {
+      "compact": "cafe",
+      "input": "CAFÉ",
+      "normalized": "cafe"
+    },
+    {
+      "compact": "dash",
+      "input": "—dash—",
+      "normalized": "dash"
+    },
+    {
+      "compact": "abc",
+      "input": "a/b_c",
+      "normalized": "a b c"
+    },
+    {
+      "compact": "ab",
+      "input": "  a   b  ",
+      "normalized": "a b"
+    },
+    {
+      "compact": "łodz",
+      "input": "Łódź",
+      "normalized": "łodz"
+    },
+    {
+      "compact": "i",
+      "input": "İ",
+      "normalized": "i"
+    },
+    {
+      "compact": "i",
+      "input": "I",
+      "normalized": "i"
+    },
+    {
+      "compact": "ı",
+      "input": "ı",
+      "normalized": "ı"
+    },
+    {
+      "compact": "ss",
+      "input": "ß",
+      "normalized": "ss"
+    },
+    {
+      "compact": "e",
+      "input": "é",
+      "normalized": "e"
+    },
+    {
+      "compact": "e",
+      "input": "É",
+      "normalized": "e"
+    },
+    {
+      "compact": "ørland",
+      "input": "Ørland",
+      "normalized": "ørland"
+    },
+    {
+      "compact": "alesund",
+      "input": "Ålesund",
+      "normalized": "alesund"
+    },
+    {
+      "compact": "londres",
+      "input": "Londres",
+      "normalized": "londres"
+    },
+    {
+      "compact": "7879",
+      "input": "787-9",
+      "normalized": "787 9"
+    },
+    {
+      "compact": "qantas",
+      "input": " Qantas ",
+      "normalized": "qantas"
+    }
+  ]
+}

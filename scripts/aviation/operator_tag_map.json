@@ -1,0 +1,19 @@
+{
+  "byLabel": {
+    "air defense force": "military-operator",
+    "air force": "military-operator",
+    "airline": "commercial-airline",
+    "cargo airline": "cargo-operator",
+    "charter airline": "commercial-airline",
+    "flag carrier": "commercial-airline",
+    "government agency": "government-operator",
+    "government airline": "government-operator",
+    "government organization": "government-operator",
+    "helicopter airline": "commercial-airline",
+    "low-cost airline": "commercial-airline",
+    "military branch": "military-operator",
+    "navy": "military-operator",
+    "private airline": "private-operator",
+    "regional airline": "commercial-airline"
+  }
+}

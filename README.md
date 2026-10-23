@@ -18,12 +18,15 @@ All spotting data is stored locally on the device. There is currently no backend
 
 ```text
 .
-├── Android/       # Android Studio / Gradle project
-├── iOS/           # Xcode project
+├── Android/          # Android Studio / Gradle project
+├── data/aviation/    # Authoritative offline aviation catalog
+├── docs/             # Catalog and data-source notes
+├── iOS/              # Xcode project and AviationCatalogCore package
+├── scripts/aviation/ # Catalog fetch, build, and validation
 └── README.md
 ```
 
-The two apps share the same product and user-facing concepts, but are implemented independently with each platform's native UI and storage APIs.
+The two apps share the same product and user-facing concepts, but are implemented independently with each platform's native UI and storage APIs. The aviation reference catalog is generated once and bundled into both apps. See `docs/aviation-catalog.md`.
 
 ## iOS
 
@@ -93,3 +96,14 @@ For instrumented tests on a running emulator or connected device:
 On Windows, use `gradlew.bat` instead of `./gradlew`.
 
 `Android/local.properties` is generated for each developer's machine and must not be committed. Build outputs, APKs, signing files, IDE metadata, and other machine-specific files are excluded by the repository `.gitignore`.
+
+## Aviation reference catalog
+
+Operators, aircraft manufacturers and models, airports, and classification terms are bundled for offline search. Application builds do not download catalog data. To rebuild from the pinned snapshots:
+
+```bash
+python3 scripts/aviation/build_catalog.py
+python3 scripts/aviation/validate_catalog.py
+```
+
+Refreshing the snapshots is a separate step and needs network access. The command and the license limits are described in `docs/aviation-data-sources.md`.

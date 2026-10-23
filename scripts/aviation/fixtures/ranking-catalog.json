@@ -1,0 +1,205 @@
+{
+  "aircraft": [
+    {
+      "aliases": [
+        "A320"
+      ],
+      "displayName": "Airbus A320 family",
+      "entryKind": "family",
+      "icaoTypeDesignators": [
+        "A320"
+      ],
+      "id": "fixture:a320-family",
+      "manufacturer": "Airbus",
+      "model": "Airbus A320 family",
+      "sourceId": "fixture"
+    },
+    {
+      "aliases": [
+        "A320-200"
+      ],
+      "displayName": "Airbus A320-200",
+      "entryKind": "model",
+      "family": "Airbus A320",
+      "icaoTypeDesignators": [
+        "A320"
+      ],
+      "id": "fixture:a320-200",
+      "manufacturer": "Airbus",
+      "model": "A320-200",
+      "sourceId": "fixture"
+    },
+    {
+      "aliases": [
+        "A350-900",
+        "A359"
+      ],
+      "displayName": "Airbus A350-900",
+      "entryKind": "model",
+      "icaoTypeDesignators": [
+        "A359"
+      ],
+      "id": "fixture:a350-900",
+      "manufacturer": "Airbus",
+      "model": "A350-900",
+      "sourceId": "fixture"
+    },
+    {
+      "aliases": [
+        "787-9"
+      ],
+      "displayName": "Boeing 787-9",
+      "entryKind": "model",
+      "icaoTypeDesignators": [
+        "B789"
+      ],
+      "id": "fixture:b787-9",
+      "manufacturer": "Boeing",
+      "model": "787-9",
+      "sourceId": "fixture"
+    },
+    {
+      "aliases": [],
+      "displayName": "de Havilland Dragon",
+      "entryKind": "model",
+      "id": "fixture:dragon",
+      "manufacturer": "de Havilland",
+      "model": "Dragon",
+      "sourceId": "fixture"
+    }
+  ],
+  "airports": [
+    {
+      "aliases": [],
+      "iataCode": "SYD",
+      "icaoCode": "YSSY",
+      "id": "fixture:sydney",
+      "ident": "YSSY",
+      "latitude": 0,
+      "longitude": 0,
+      "municipality": "Sydney",
+      "name": "Sydney Kingsford Smith International Airport",
+      "scheduledService": false,
+      "sourceId": "fixture",
+      "type": "small_airport"
+    },
+    {
+      "aliases": [
+        "Londres"
+      ],
+      "iataCode": "LHR",
+      "icaoCode": "EGLL",
+      "id": "fixture:heathrow",
+      "ident": "EGLL",
+      "latitude": 0,
+      "longitude": 0,
+      "municipality": "London",
+      "name": "London Heathrow Airport",
+      "scheduledService": false,
+      "sourceId": "fixture",
+      "type": "small_airport"
+    },
+    {
+      "aliases": [],
+      "icaoCode": "YFGS",
+      "id": "fixture:frogs",
+      "ident": "AU-0224",
+      "latitude": 0,
+      "longitude": 0,
+      "name": "Frogs Hollow Airfield",
+      "scheduledService": false,
+      "sourceId": "fixture",
+      "type": "small_airport"
+    },
+    {
+      "aliases": [],
+      "iataCode": "MHZ",
+      "icaoCode": "EGUN",
+      "id": "fixture:mildenhall",
+      "ident": "EGUN",
+      "latitude": 0,
+      "longitude": 0,
+      "municipality": "Mildenhall",
+      "name": "RAF Mildenhall",
+      "scheduledService": false,
+      "sourceId": "fixture",
+      "type": "small_airport"
+    },
+    {
+      "aliases": [],
+      "id": "fixture:malmo",
+      "ident": "ZZZM",
+      "latitude": 0,
+      "longitude": 0,
+      "municipality": "Malmö",
+      "name": "Malmö Fixture Field",
+      "scheduledService": false,
+      "sourceId": "fixture",
+      "type": "small_airport"
+    },
+    {
+      "aliases": [],
+      "id": "fixture:epps",
+      "ident": "00AL",
+      "latitude": 0,
+      "localCode": "00AL",
+      "longitude": 0,
+      "name": "Epps Airpark",
+      "scheduledService": false,
+      "sourceId": "fixture",
+      "type": "small_airport"
+    }
+  ],
+  "operators": [
+    {
+      "aliases": [
+        "Qantas Airways"
+      ],
+      "callsigns": [
+        "QANTAS"
+      ],
+      "iataCodes": [
+        "QF"
+      ],
+      "icaoCodes": [
+        "QFA"
+      ],
+      "id": "fixture:qantas",
+      "name": "Qantas",
+      "sourceId": "fixture",
+      "tags": [
+        "commercial-airline"
+      ]
+    },
+    {
+      "aliases": [],
+      "icaoCodes": [
+        "QFA"
+      ],
+      "id": "fixture:prefix-carrier",
+      "name": "Prefix Carrier",
+      "sourceId": "fixture",
+      "tags": []
+    },
+    {
+      "aliases": [],
+      "id": "fixture:qantaslink",
+      "name": "QantasLink",
+      "sourceId": "fixture",
+      "tags": [
+        "commercial-airline"
+      ]
+    },
+    {
+      "aliases": [
+        "RAAF"
+      ],
+      "id": "fixture:raaf",
+      "name": "Royal Australian Air Force",
+      "sourceId": "fixture",
+      "tags": [
+        "military-operator"
+      ]
+    }
+  ]
+}

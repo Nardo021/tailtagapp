@@ -1,0 +1,12 @@
+{
+  "retrieved": "2026-10-23",
+  "license": "CC0 1.0",
+  "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+  "note": "These Wikidata items are aircraft models or families that the English-Wikipedia import missed because they have no English Wikipedia sitelink. Only labels, English aliases, and statements are imported. Wikipedia article text is not copied. No ICAO type designator is asserted.",
+  "items": [
+    "Q57439868",
+    "Q15111575",
+    "Q57440517",
+    "Q106340166"
+  ]
+}
