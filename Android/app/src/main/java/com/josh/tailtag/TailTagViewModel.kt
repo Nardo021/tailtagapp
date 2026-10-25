@@ -8,6 +8,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.josh.tailtag.aviation.AviationCatalog
+import com.josh.tailtag.aviation.AviationCatalogLoader
+import com.josh.tailtag.aviation.AviationCatalogRepository
+import com.josh.tailtag.aviation.AircraftModel
+import com.josh.tailtag.aviation.AviationAirport
+import com.josh.tailtag.aviation.AviationManufacturer
+import com.josh.tailtag.aviation.AviationOperator
+import com.josh.tailtag.aviation.entry.CatalogLoadPhase
+import com.josh.tailtag.aviation.entry.CatalogLoadState
+import com.josh.tailtag.aviation.entry.catalogQueryGuidance
+import com.josh.tailtag.aviation.entry.CatalogQueryGuidance
+import com.josh.tailtag.aviation.entry.linkedManufacturerSelection
 import com.josh.tailtag.data.TailTagRepository
 import com.josh.tailtag.model.SpottingEntry
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +32,10 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
 
     var entries by mutableStateOf(repository.loadEntries())
         private set
+    var catalogPhase by mutableStateOf(CatalogLoadPhase.IDLE)
+        private set
+    var catalogError by mutableStateOf<String?>(null)
+        private set
     var hasCompletedOnboarding by mutableStateOf(preferences.getBoolean("onboarding_complete", false))
         private set
     var accentName by mutableStateOf(preferences.getString("accent", "blue") ?: "blue")
@@ -27,6 +43,80 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
     @set:JvmName("setInternalColorScheme")
     var colorScheme by mutableStateOf(preferences.getString("color_scheme", "system") ?: "system")
         private set
+
+    private val catalogRepository = AviationCatalogRepository {
+        AviationCatalogLoader.load(getApplication<Application>())
+    }
+    @Volatile private var catalog: AviationCatalog? = null
+    private var catalogState = CatalogLoadState()
+
+    init {
+        ensureCatalog()
+    }
+
+    fun ensureCatalog() {
+        if (!catalogState.beginAccepted) return
+        catalogState = catalogState.begin()
+        catalogPhase = catalogState.phase
+        catalogError = null
+        viewModelScope.launch(Dispatchers.IO) {
+            loadCatalog()
+        }
+    }
+
+    fun retryCatalog() {
+        val retried = catalogState.retry() ?: return
+        catalogState = retried
+        catalogPhase = CatalogLoadPhase.LOADING
+        catalogError = null
+        viewModelScope.launch(Dispatchers.IO) {
+            loadCatalog()
+        }
+    }
+
+    fun operatorExists(id: String?) = exists(id) { catalog?.operatorById(it) }
+    fun manufacturerExists(id: String?) = exists(id) { catalog?.manufacturerById(it) }
+    fun aircraftExists(id: String?) = exists(id) { catalog?.aircraftById(it) }
+    fun airportExists(id: String?) = exists(id) { catalog?.airportById(it) }
+
+    fun aircraftManufacturerLink(aircraftId: String?): Pair<String, String>? {
+        if (catalogPhase != CatalogLoadPhase.READY || aircraftId == null) return null
+        val model = catalog?.aircraftById(aircraftId) ?: return null
+        val linked = linkedManufacturerSelection(model) ?: return null
+        val id = linked.catalogId ?: return null
+        return id to linked.displayText
+    }
+
+    fun classificationLabels(): Pair<Map<String, String>, Map<String, String>> {
+        val loaded = catalog ?: return emptyMap<String, String>() to emptyMap()
+        return labels(loaded, "aircraft-role") to labels(loaded, "operation-type")
+    }
+
+    suspend fun searchOperators(query: String, limit: Int) = search(query) {
+        outcome(it.resolveOperators(query, limit))
+    }
+
+    suspend fun searchManufacturers(query: String, limit: Int) = search(query) {
+        val records = it.searchManufacturers(query, limit)
+        SearchPage(records, ambiguous = false, unmatched = records.isEmpty() && catalogQueryGuidance(query) == CatalogQueryGuidance.READY)
+    }
+
+    suspend fun searchAirports(query: String, limit: Int) = search(query) {
+        outcome(it.resolveAirports(query, limit))
+    }
+
+    suspend fun searchAircraft(query: String, limit: Int, manufacturerId: String?) = search(query) { loaded ->
+        if (manufacturerId == null) {
+            outcome(loaded.resolveAircraft(query, limit))
+        } else {
+            val records = loaded.searchAircraft(query, limit, manufacturerId)
+            SearchPage(
+                records = records,
+                ambiguous = false,
+                unmatched = records.isEmpty() && catalogQueryGuidance(query) == CatalogQueryGuidance.READY,
+            )
+        }
+    }
 
     fun completeOnboarding() {
         hasCompletedOnboarding = true
@@ -48,25 +138,12 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
         preferences.edit().putString("color_scheme", value).apply()
     }
 
-    fun addEntry(
-        registration: String,
-        airline: String,
-        location: String,
-        aircraftType: String?,
-        notes: String?,
-        timestamp: Long,
-        photoUris: List<Uri>,
-    ) {
+    fun addEntry(draft: SpottingEntry, photoUris: List<Uri>) {
         viewModelScope.launch(Dispatchers.IO) {
             val photoPaths = photoUris.mapNotNull(repository::copyPhoto)
-            val entry = SpottingEntry(
+            val entry = draft.copy(
                 photos = photoPaths,
-                registration = registration.trim(),
-                airline = airline.trim(),
-                location = location.trim(),
-                aircraftType = aircraftType?.trim()?.takeUnless(String::isNullOrBlank),
-                notes = notes?.trim()?.takeUnless(String::isNullOrBlank),
-                timestamp = timestamp,
+                registration = draft.registration.trim(),
             )
             val updated = listOf(entry) + entries
             repository.saveEntries(updated)
@@ -103,4 +180,46 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
         colorScheme = "system"
         viewModelScope.launch(Dispatchers.IO) { repository.saveEntries(emptyList()) }
     }
+
+    private suspend fun loadCatalog() {
+        try {
+            val loaded = catalogRepository.catalog()
+            withContext(Dispatchers.Main) {
+                catalog = loaded
+                catalogState = catalogState.succeed()
+                catalogPhase = catalogState.phase
+                catalogError = null
+            }
+        } catch (_: Exception) {
+            withContext(Dispatchers.Main) {
+                catalogState = catalogState.fail()
+                catalogPhase = catalogState.phase
+                catalogError = "The aviation catalog could not be loaded."
+            }
+        }
+    }
+
+    private fun exists(id: String?, lookup: (String) -> Any?): Boolean? {
+        if (catalogPhase != CatalogLoadPhase.READY || id.isNullOrEmpty()) return null
+        return lookup(id) != null
+    }
+
+    private fun labels(loaded: AviationCatalog, dimension: String): Map<String, String> {
+        val values = loaded.classifications.firstOrNull { it.id == dimension }?.values ?: return emptyMap()
+        return values.associate { it.id to it.label }
+    }
+
+    private suspend fun <T> search(query: String, block: (AviationCatalog) -> SearchPage<T>): SearchPage<T>? {
+        val loaded = catalog ?: return null
+        return withContext(Dispatchers.Default) { block(loaded) }
+    }
+
+    private fun <T> outcome(resolution: com.josh.tailtag.aviation.AviationQueryResolution<T>): SearchPage<T> = when (resolution) {
+        com.josh.tailtag.aviation.AviationQueryResolution.Blank -> SearchPage(emptyList(), ambiguous = false, unmatched = false)
+        is com.josh.tailtag.aviation.AviationQueryResolution.Matches -> SearchPage(resolution.records, ambiguous = false, unmatched = false)
+        is com.josh.tailtag.aviation.AviationQueryResolution.Ambiguous -> SearchPage(resolution.records, ambiguous = true, unmatched = false)
+        is com.josh.tailtag.aviation.AviationQueryResolution.Unmatched -> SearchPage(emptyList(), ambiguous = false, unmatched = true)
+    }
 }
+
+data class SearchPage<T>(val records: List<T>, val ambiguous: Boolean, val unmatched: Boolean)

@@ -126,7 +126,11 @@ class AviationCatalog(
     private val manufacturersById = manufacturers.associateBy { it.id }
 
     fun searchOperators(query: String, limit: Int = 20) = operatorIndex.search(query, limit)
-    fun searchAircraft(query: String, limit: Int = 20) = aircraftIndex.search(query, limit)
+    /** `manufacturerId` is applied before `limit`, so other manufacturers cannot crowd the match out. */
+    fun searchAircraft(query: String, limit: Int = 20, manufacturerId: String? = null) =
+        aircraftIndex.search(query, limit) { model ->
+            manufacturerId == null || model.manufacturerId == manufacturerId
+        }
     fun searchAirports(query: String, limit: Int = 20) = airportIndex.search(query, limit)
     fun searchManufacturers(query: String, limit: Int = 20) = manufacturerIndex.search(query, limit)
     fun operatorById(id: String) = operatorsById[id]

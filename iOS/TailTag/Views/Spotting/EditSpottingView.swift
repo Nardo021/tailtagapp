@@ -1,143 +1,83 @@
-import SwiftUI
 import PhotosUI
+import SmartEntry
+import SwiftUI
 import Vision
 
 struct EditSpottingView: View {
     @EnvironmentObject var spottingStore: SpottingStore
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var catalog: AviationCatalogUIService
     @Environment(\.dismiss) private var dismiss
-    
+
     let spotting: SpottingEntry
-    
+
+    @StateObject private var editor: SpottingEditorModel
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var photosData: [Data]
-    @State private var registration: String
-    @State private var airline: String
-    @State private var location: String
-    @State private var aircraftType: String
-    @State private var notes: String
-    @State private var timestamp: Date
     @State private var showingDeleteAlert = false
     @State private var isDateFromPhoto = false
-    @State private var isRegistrationFromPhoto = false
-    @State private var isAirlineFromPhoto = false
-    
+
     private let textDetector = AircraftTextDetector()
-    
+
     init(spotting: SpottingEntry) {
         self.spotting = spotting
         _photosData = State(wrappedValue: spotting.photos)
-        _registration = State(initialValue: spotting.registration)
-        _airline = State(initialValue: spotting.airline)
-        _location = State(initialValue: spotting.location)
-        _aircraftType = State(initialValue: spotting.aircraftType ?? "")
-        _notes = State(initialValue: spotting.notes ?? "")
-        _timestamp = State(initialValue: spotting.timestamp)
+        _editor = StateObject(wrappedValue: SpottingEditorModel(entry: spotting))
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Photos") {
                     photoGalleryView
                 }
                 
-                Section("Aircraft Details") {
+                Section("Aircraft") {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Image(systemName: "number")
                                 .foregroundColor(appSettings.accentColor)
                                 .frame(width: 25)
-                            TextField("Registration", text: $registration)
-                                .onChange(of: registration) { _, _ in
-                                    isRegistrationFromPhoto = false
-                                }
+                            TextField("Registration", text: Binding(
+                                get: { editor.registration },
+                                set: { editor.editRegistration($0) }
+                            ))
+                            .accessibilityIdentifier("registration-field")
                         }
-                        
-                        if isRegistrationFromPhoto {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(appSettings.accentColor)
-                                    .font(.caption)
-                                    .frame(width: 25)
-                                Text("Registration detected from photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                        if editor.registrationFromPhoto {
+                            photoHint("Registration detected from photo")
                         }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "airplane")
-                                .foregroundColor(appSettings.accentColor)
-                                .frame(width: 25)
-                            TextField("Airline", text: $airline)
-                                .onChange(of: airline) { _, _ in
-                                    isAirlineFromPhoto = false
-                                }
-                        }
-                        
-                        if isAirlineFromPhoto {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(appSettings.accentColor)
-                                    .font(.caption)
-                                    .frame(width: 25)
-                                Text("Airline detected from photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    
-                    HStack {
-                        Image(systemName: "location")
-                            .foregroundColor(appSettings.accentColor)
-                            .frame(width: 25)
-                        TextField("Location", text: $location)
-                    }
-                    
-                    HStack {
-                        Image(systemName: "airplane.circle")
-                            .foregroundColor(appSettings.accentColor)
-                            .frame(width: 25)
-                        TextField("Aircraft Type (Optional)", text: $aircraftType)
                     }
                 }
-                
-                Section("Additional Info") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "calendar")
-                                .foregroundColor(appSettings.accentColor)
-                                .frame(width: 25)
-                            DatePicker("Date Spotted", selection: $timestamp, displayedComponents: [.date, .hourAndMinute])
-                                .onChange(of: timestamp) { _, _ in
-                                    isDateFromPhoto = false
-                                }
-                        }
-                        
-                        if isDateFromPhoto {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(appSettings.accentColor)
-                                    .font(.caption)
-                                    .frame(width: 25)
-                                Text("Date automatically set from photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    
+
+                SpottingReferenceForm(editor: editor, catalog: catalog, accent: appSettings.accentColor)
+
+                Section("Notes") {
                     HStack(alignment: .top) {
                         Image(systemName: "note.text")
                             .foregroundColor(appSettings.accentColor)
                             .frame(width: 25)
                             .padding(.top, 8)
-                        TextField("Notes (Optional)", text: $notes, axis: .vertical)
+                        TextField("Notes (Optional)", text: $editor.notes, axis: .vertical)
                             .lineLimit(3...6)
+                            .accessibilityIdentifier("notes-field")
+                    }
+                }
+
+                Section("Date & Time") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "calendar")
+                                .foregroundColor(appSettings.accentColor)
+                                .frame(width: 25)
+                            DatePicker("Date Spotted", selection: $editor.timestamp, displayedComponents: [.date, .hourAndMinute])
+                                .onChange(of: editor.timestamp) { _, _ in
+                                    isDateFromPhoto = false
+                                }
+                        }
+                        if isDateFromPhoto {
+                            photoHint("Date automatically set from photo")
+                        }
                     }
                 }
                 
@@ -168,6 +108,7 @@ struct EditSpottingView: View {
                     }
                     .fontWeight(.semibold)
                     .disabled(!isValidEntry)
+                    .accessibilityIdentifier("save-spotting")
                 }
             }
         }
@@ -185,7 +126,7 @@ struct EditSpottingView: View {
                         // Extract metadata from first added photo
                         if photosData.count == 1 {
                             if let photoDate = PhotoMetadataExtractor.extractDateFromPhoto(data) {
-                                timestamp = photoDate
+                                editor.timestamp = photoDate
                                 isDateFromPhoto = true
                             } else {
                                 isDateFromPhoto = false
@@ -214,22 +155,13 @@ struct EditSpottingView: View {
     }
     
     private var isValidEntry: Bool {
-        !registration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !airline.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        editor.canSave(photoCount: photosData.count)
     }
-    
+
     private func saveChanges() {
         guard !photosData.isEmpty else { return }
-        var updatedSpotting = spotting
-        updatedSpotting.photos = photosData
-        updatedSpotting.registration = registration.trimmingCharacters(in: .whitespacesAndNewlines)
-        updatedSpotting.airline = airline.trimmingCharacters(in: .whitespacesAndNewlines)
-        updatedSpotting.location = location.trimmingCharacters(in: .whitespacesAndNewlines)
-        updatedSpotting.aircraftType = aircraftType.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : aircraftType.trimmingCharacters(in: .whitespacesAndNewlines)
-        updatedSpotting.notes = notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        updatedSpotting.timestamp = timestamp
-        
+        var updatedSpotting = editor.entry(id: spotting.id, photos: photosData)
+        updatedSpotting = updatedSpotting.replacingReference(editor.reference)
         spottingStore.updateSpotting(updatedSpotting)
         dismiss()
     }
@@ -242,22 +174,24 @@ struct EditSpottingView: View {
     private func detectAircraftInfoFromImage(_ image: UIImage) {
         textDetector.detectAircraftInfo(in: image) { result in
             DispatchQueue.main.async {
-                // Auto-fill registration if detected and current field is empty or matches original
-                if let detectedRegistration = result.registration,
-                   result.confidence > 0.6,
-                   (self.registration.isEmpty || self.registration == self.spotting.registration) {
-                    self.registration = detectedRegistration
-                    self.isRegistrationFromPhoto = true
-                }
-                
-                // Auto-fill airline if detected and current field is empty or matches original
-                if let detectedAirline = result.airline,
-                   result.confidence > 0.6,
-                   (self.airline.isEmpty || self.airline == self.spotting.airline) {
-                    self.airline = detectedAirline
-                    self.isAirlineFromPhoto = true
-                }
+                self.editor.applyPhotoDetection(
+                    registration: result.registration,
+                    airline: result.airline,
+                    confidence: Double(result.confidence)
+                )
             }
+        }
+    }
+
+    private func photoHint(_ text: String) -> some View {
+        HStack {
+            Image(systemName: "camera.fill")
+                .foregroundStyle(appSettings.accentColor)
+                .font(.caption)
+                .frame(width: 25)
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
     

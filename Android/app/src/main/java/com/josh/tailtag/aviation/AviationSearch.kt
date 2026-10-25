@@ -78,7 +78,7 @@ class AviationSearchIndex<T>(records: List<T>, id: (T) -> String, codes: (T) -> 
         return exactCodes[compact]?.size ?: 0
     }
 
-    fun search(query: String, limit: Int): List<T> {
+    fun search(query: String, limit: Int, include: (T) -> Boolean = { true }): List<T> {
         require(limit >= 0) { "limit must be >= 0" }
         val normalized = AviationText.normalize(query)
         val compact = AviationText.compact(normalized)
@@ -90,6 +90,7 @@ class AviationSearchIndex<T>(records: List<T>, id: (T) -> String, codes: (T) -> 
         val ranked = ArrayList<Triple<Int, String, T>>()
         for (index in candidates) {
             val entry = entries[index]
+            if (!include(entry.record)) continue
             val tier = tier(entry, normalized, compact, shortCode) ?: continue
             ranked.add(Triple(tier, entry.recordId, entry.record))
         }

@@ -90,7 +90,7 @@ struct SpottingCardView: View {
                                 .fontWeight(.bold)
                                 .foregroundStyle(.white)
                             
-                            Text(entry.airline)
+                            Text(entry.airline.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "No operator" : entry.airline)
                                 .font(.title3)
                                 .foregroundStyle(.white.opacity(0.9))
                             
@@ -116,6 +116,7 @@ struct SpottingCardView: View {
             .padding(.horizontal, 16)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityIdentifier("spotting-card-\(entry.registration)")
         .sheet(isPresented: $showingDetail) {
             SpottingDetailView(entry: entry)
         }

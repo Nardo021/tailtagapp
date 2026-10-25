@@ -74,6 +74,9 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.DarkMode
@@ -150,6 +153,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.josh.tailtag.data.AircraftTextDetector
+import com.josh.tailtag.aviation.entry.SpottingEditorState
+import com.josh.tailtag.aviation.entry.referenceState
+import com.josh.tailtag.aviation.entry.ClassificationCopy
+import com.josh.tailtag.aviation.entry.classificationSummary
+import com.josh.tailtag.aviation.entry.selectionCaption
+import com.josh.tailtag.aviation.entry.selectionSummary
+import com.josh.tailtag.aviation.ui.SpottingReferenceEditor
 import com.josh.tailtag.model.SortOption
 import com.josh.tailtag.model.SpottingEntry
 import com.josh.tailtag.model.sortedByOption
@@ -452,7 +462,17 @@ private fun SearchScreen(
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
     val filtered = entries.filter { entry ->
-        listOf(entry.registration, entry.airline, entry.location, entry.aircraftType.orEmpty())
+        listOf(
+            entry.registration,
+            entry.airline,
+            entry.location,
+            entry.aircraftType.orEmpty(),
+            entry.manufacturerName.orEmpty(),
+            entry.aircraftRoleNote.orEmpty(),
+            entry.operationTypeNote.orEmpty(),
+            ClassificationCopy.roleLabel(entry.aircraftRoleId.orEmpty()),
+            ClassificationCopy.operationLabel(entry.operationTypeId.orEmpty()),
+        )
             .any { it.contains(searchText, ignoreCase = true) }
     }.sortedByOption(sortOption)
     Column(modifier.fillMaxSize()) {
@@ -901,12 +921,31 @@ private fun DetailDialog(
                             Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                                 DetailRow(Icons.Default.Flight, "Registration", entry.registration)
                                 HorizontalDivider(Modifier.padding(start = 44.dp))
-                                DetailRow(Icons.Default.AccountBalance, "Airline", entry.airline)
+                                DetailRow(Icons.Default.AccountBalance, "Airline / Operator", selectionSummary(entry.referenceState().operatorField, "No operator"))
+                                selectionCaption(entry.referenceState().operatorField)?.let {
+                                    Text(it, modifier = Modifier.padding(start = 48.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                                 HorizontalDivider(Modifier.padding(start = 44.dp))
-                                DetailRow(Icons.Default.LocationOn, "Location", entry.location)
-                                entry.aircraftType?.takeIf { it.isNotBlank() }?.let {
+                                val reference = entry.referenceState()
+                                if (reference.manufacturerField.kind != com.josh.tailtag.aviation.entry.AviationSelectionKind.ABSENT) {
+                                    DetailRow(Icons.Default.Build, "Manufacturer", selectionSummary(reference.manufacturerField, "No manufacturer"))
                                     HorizontalDivider(Modifier.padding(start = 44.dp))
-                                    DetailRow(Icons.Default.Flight, "Aircraft type", it)
+                                }
+                                DetailRow(Icons.Default.LocationOn, "Location", selectionSummary(reference.locationField, entry.location))
+                                if (reference.aircraftField.kind != com.josh.tailtag.aviation.entry.AviationSelectionKind.ABSENT) {
+                                    HorizontalDivider(Modifier.padding(start = 44.dp))
+                                    DetailRow(Icons.Default.Flight, "Aircraft", selectionSummary(reference.aircraftField, "No aircraft"))
+                                    selectionCaption(reference.aircraftField)?.let {
+                                        Text(it, modifier = Modifier.padding(start = 48.dp, bottom = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                classificationSummary(reference.classification.roleId, reference.classification.roleNote, ClassificationCopy.roleLabels)?.let {
+                                    HorizontalDivider(Modifier.padding(start = 44.dp))
+                                    DetailRow(Icons.Default.Category, "Aircraft role", it)
+                                }
+                                classificationSummary(reference.classification.operationTypeId, reference.classification.operationTypeNote, ClassificationCopy.operationLabels)?.let {
+                                    HorizontalDivider(Modifier.padding(start = 44.dp))
+                                    DetailRow(Icons.Default.Work, "Operation", it)
                                 }
                                 HorizontalDivider(Modifier.padding(start = 44.dp))
                                 DetailRow(Icons.Default.CalendarMonth, "Spotted", formatDetailDate(entry.timestamp))
@@ -1014,17 +1053,11 @@ private fun EntryEditorDialog(
     onSaved: () -> Unit,
 ) {
     val context = LocalContext.current
-    var registration by remember(existing?.id) { mutableStateOf(existing?.registration.orEmpty()) }
-    var airline by remember(existing?.id) { mutableStateOf(existing?.airline.orEmpty()) }
-    var location by remember(existing?.id) { mutableStateOf(existing?.location.orEmpty()) }
-    var aircraftType by remember(existing?.id) { mutableStateOf(existing?.aircraftType.orEmpty()) }
-    var notes by remember(existing?.id) { mutableStateOf(existing?.notes.orEmpty()) }
+    var editor by remember(existing?.id) { mutableStateOf(SpottingEditorState.from(existing)) }
     var timestamp by remember(existing?.id) { mutableLongStateOf(existing?.timestamp ?: System.currentTimeMillis()) }
     var existingPhotos by remember(existing?.id) { mutableStateOf(existing?.photos.orEmpty()) }
     var newUris by remember(existing?.id) { mutableStateOf<List<Uri>>(emptyList()) }
     var dateFromPhoto by remember { mutableStateOf(false) }
-    var registrationFromPhoto by remember { mutableStateOf(false) }
-    var airlineFromPhoto by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -1043,22 +1076,13 @@ private fun EntryEditorDialog(
         if (existingPhotos.isEmpty() && newUris.size == 1) {
             readPhotoDate(context, firstUri)?.let { timestamp = it; dateFromPhoto = true }
             AircraftTextDetector.detect(context, firstUri) { result ->
-                if (result.confidence > 0.6f) {
-                    if (registration.isBlank() && result.registration != null) {
-                        registration = result.registration
-                        registrationFromPhoto = true
-                    }
-                    if (airline.isBlank() && result.airline != null) {
-                        airline = result.airline
-                        airlineFromPhoto = true
-                    }
-                }
+                editor = editor.applyPhotoDetection(result.registration, result.airline, result.confidence.toDouble())
             }
         }
     }
 
     val allPhotoCount = existingPhotos.size + newUris.size
-    val valid = registration.isNotBlank() && airline.isNotBlank() && location.isNotBlank() && allPhotoCount > 0
+    val valid = editor.canSave(allPhotoCount)
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val sheetHeight = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.height.toDp() * 0.77f
@@ -1085,18 +1109,15 @@ private fun EntryEditorDialog(
                 )
                 TextButton(onClick = onDismiss) { Text("Cancel") }
                 TextButton(enabled = valid, onClick = {
+                            val draft = editor.copy(notes = editor.notes).toEntry(
+                                id = existing?.id ?: java.util.UUID.randomUUID().toString(),
+                                timestamp = timestamp,
+                                photos = existingPhotos,
+                            )
                             if (existing == null) {
-                                viewModel.addEntry(registration, airline, location, aircraftType, notes, timestamp, newUris)
+                                viewModel.addEntry(draft, newUris)
                             } else {
-                                val updated = existing.copy(
-                                    registration = registration.trim(),
-                                    airline = airline.trim(),
-                                    location = location.trim(),
-                                    aircraftType = aircraftType.trim().takeUnless(String::isBlank),
-                                    notes = notes.trim().takeUnless(String::isBlank),
-                                    timestamp = timestamp,
-                                )
-                                viewModel.updateEntry(updated, existingPhotos, newUris)
+                                viewModel.updateEntry(draft, existingPhotos, newUris)
                             }
                             onSaved()
                         }) { Text("Save") }
@@ -1141,12 +1162,9 @@ private fun EntryEditorDialog(
                     }
                     item {
                         EditorSectionCard("Aircraft details") {
-                            EditorTextField("Registration", registration, { registration = it; registrationFromPhoto = false }, KeyboardCapitalization.Characters, Icons.Default.Numbers)
-                            DetectionHint(registrationFromPhoto, "Registration detected from photo")
-                            EditorTextField("Airline", airline, { airline = it; airlineFromPhoto = false }, KeyboardCapitalization.Words, Icons.Default.Flight)
-                            DetectionHint(airlineFromPhoto, "Airline detected from photo")
-                            EditorTextField("Location (e.g., EGLL or Heathrow)", location, { location = it }, KeyboardCapitalization.Characters, Icons.Default.LocationOn)
-                            EditorTextField("Aircraft type (optional)", aircraftType, { aircraftType = it }, KeyboardCapitalization.Characters, Icons.Default.Flight)
+                            EditorTextField("Registration", editor.registration, { editor = editor.editRegistration(it) }, KeyboardCapitalization.Characters, Icons.Default.Numbers)
+                            DetectionHint(editor.registrationFromPhoto, "Registration detected from photo")
+                            SpottingReferenceEditor(editor, viewModel) { editor = it }
                         }
                     }
                     item {
@@ -1171,7 +1189,7 @@ private fun EntryEditorDialog(
                                 )
                             }
                             DetectionHint(dateFromPhoto, "Date automatically set from photo")
-                            EditorTextField("Notes (optional)", notes, { notes = it }, KeyboardCapitalization.Sentences, null, minLines = 3)
+                            EditorTextField("Notes (optional)", editor.notes, { editor = editor.copy(notes = it) }, KeyboardCapitalization.Sentences, null, minLines = 3)
                         }
                     }
                     if (existing != null) {

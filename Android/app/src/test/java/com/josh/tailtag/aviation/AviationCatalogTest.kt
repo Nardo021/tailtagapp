@@ -146,6 +146,25 @@ class AviationCatalogTest {
         }
     }
 
+    @Test
+    fun manufacturerFilterKeepsMatchesOutsideTheGlobalWindow() {
+        val common = "maker:common"
+        val rare = "maker:rare"
+        val aircraft = (0 until 201).map { index ->
+            syntheticAircraft("zz-common-%03d".format(index), common, "Alpha $index")
+        } + listOf(
+            syntheticAircraft("zz-rare-early", rare, "Alpha Early"),
+            syntheticAircraft("zz-rare-later", rare, "Alpha Later"),
+        )
+        val catalog = AviationCatalog(1, "manufacturer-window", emptyList(), emptyList(), aircraft, emptyList(), emptyList())
+        val truncated = catalog.searchAircraft("alpha", 200)
+        assertEquals(200, truncated.size)
+        assertTrue(truncated.none { it.manufacturerId == rare })
+        assertEquals(listOf("zz-rare-early", "zz-rare-later"), catalog.searchAircraft("alpha", 20, rare).map { it.id })
+        assertEquals(listOf("zz-rare-early"), catalog.searchAircraft("alpha", 1, rare).map { it.id })
+        assertTrue(catalog.searchAircraft("alpha", 20, "maker:missing").isEmpty())
+    }
+
     private fun fixtureCatalog(): AviationCatalog {
         val payload = json("ranking-catalog.json")
         return AviationCatalog(
@@ -179,3 +198,19 @@ class AviationCatalogTest {
 }
 
 private fun org.json.JSONArray.objects(): List<JSONObject> = List(length()) { getJSONObject(it) }
+
+private fun syntheticAircraft(id: String, manufacturerId: String, name: String) = AircraftModel(
+    id = id,
+    manufacturerId = manufacturerId,
+    manufacturer = null,
+    manufacturerNames = emptyList(),
+    familyId = null,
+    family = null,
+    model = name,
+    displayName = name,
+    entryKind = "model",
+    icaoTypeDesignators = emptyList(),
+    iataEquipmentCodes = emptyList(),
+    aliases = emptyList(),
+    sourceId = id,
+)

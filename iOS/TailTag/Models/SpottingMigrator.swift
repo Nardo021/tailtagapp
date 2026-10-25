@@ -122,6 +122,7 @@ enum SpottingMigrator {
                     timestamp: record.timestamp
                 )
                 cloudContext.insert(newRecord)
+                newRecord.copyCatalogFields(from: record)
 
                 for photo in sorted {
                     let newPhoto = PhotoRecord(data: photo.data, index: photo.index)

@@ -8,10 +8,13 @@
 
 /* Begin PBXFileReference section */
 		B190D2E82E0B97A600EB711C /* TailTag.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TailTag.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0A7B10E0000000000000002 /* TailTagTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TailTagTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0A7B10F0000000000000002 /* TailTagUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TailTagUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXBuildFile section */
 		C0A7A10C0000000000000003 /* AviationCatalog in Frameworks */ = {isa = PBXBuildFile; productRef = C0A7A10C0000000000000002 /* AviationCatalog */; };
+		C0A7A10D0000000000000003 /* SmartEntry in Frameworks */ = {isa = PBXBuildFile; productRef = C0A7A10D0000000000000002 /* SmartEntry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -33,6 +36,16 @@
 			path = TailTag;
 			sourceTree = "<group>";
 		};
+		C0A7B10E0000000000000006 /* TailTagTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TailTagTests;
+			sourceTree = "<group>";
+		};
+		C0A7B10F0000000000000006 /* TailTagUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TailTagUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,6 +54,21 @@
 			buildActionMask = 2147483647;
 			files = (
 				C0A7A10C0000000000000003 /* AviationCatalog in Frameworks */,
+				C0A7A10D0000000000000003 /* SmartEntry in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0A7B10E0000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0A7B10F0000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,6 +79,8 @@
 			isa = PBXGroup;
 			children = (
 				B190D2EA2E0B97A600EB711C /* TailTag */,
+				C0A7B10E0000000000000006 /* TailTagTests */,
+				C0A7B10F0000000000000006 /* TailTagUITests */,
 				B190D2E92E0B97A600EB711C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +89,8 @@
 			isa = PBXGroup;
 			children = (
 				B190D2E82E0B97A600EB711C /* TailTag.app */,
+				C0A7B10E0000000000000002 /* TailTagTests.xctest */,
+				C0A7B10F0000000000000002 /* TailTagUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,10 +116,53 @@
 			name = TailTag;
 			packageProductDependencies = (
 				C0A7A10C0000000000000002 /* AviationCatalog */,
+				C0A7A10D0000000000000002 /* SmartEntry */,
 			);
 			productName = TailTag;
 			productReference = B190D2E82E0B97A600EB711C /* TailTag.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C0A7B10E0000000000000001 /* TailTagTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0A7B10E0000000000000007 /* Build configuration list for PBXNativeTarget "TailTagTests" */;
+			buildPhases = (
+				C0A7B10E0000000000000003 /* Sources */,
+				C0A7B10E0000000000000004 /* Frameworks */,
+				C0A7B10E0000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C0A7B10E000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C0A7B10E0000000000000006 /* TailTagTests */,
+			);
+			name = TailTagTests;
+			productName = TailTagTests;
+			productReference = C0A7B10E0000000000000002 /* TailTagTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C0A7B10F0000000000000001 /* TailTagUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0A7B10F0000000000000007 /* Build configuration list for PBXNativeTarget "TailTagUITests" */;
+			buildPhases = (
+				C0A7B10F0000000000000003 /* Sources */,
+				C0A7B10F0000000000000004 /* Frameworks */,
+				C0A7B10F0000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C0A7B10F000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C0A7B10F0000000000000006 /* TailTagUITests */,
+			);
+			name = TailTagUITests;
+			productName = TailTagUITests;
+			productReference = C0A7B10F0000000000000002 /* TailTagUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -101,6 +176,14 @@
 				TargetAttributes = {
 					B190D2E72E0B97A600EB711C = {
 						CreatedOnToolsVersion = 26.0;
+					};
+					C0A7B10E0000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = B190D2E72E0B97A600EB711C;
+					};
+					C0A7B10F0000000000000001 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = B190D2E72E0B97A600EB711C;
 					};
 				};
 			};
@@ -119,15 +202,32 @@
 			projectRoot = "";
 			packageReferences = (
 				C0A7A10C0000000000000001 /* XCLocalSwiftPackageReference "AviationCatalogCore" */,
+				C0A7A10D0000000000000001 /* XCLocalSwiftPackageReference "SmartEntryCore" */,
 			);
 			targets = (
 				B190D2E72E0B97A600EB711C /* TailTag */,
+				C0A7B10E0000000000000001 /* TailTagTests */,
+				C0A7B10F0000000000000001 /* TailTagUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		B190D2E62E0B97A600EB711C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0A7B10E0000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0A7B10F0000000000000005 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -144,7 +244,51 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C0A7B10E0000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0A7B10F0000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C0A7B10E000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B190D2E72E0B97A600EB711C /* TailTag */;
+			targetProxy = C0A7B10E000000000000000A /* PBXContainerItemProxy */;
+		};
+		C0A7B10F000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B190D2E72E0B97A600EB711C /* TailTag */;
+			targetProxy = C0A7B10F000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		C0A7B10E000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B190D2E02E0B97A600EB711C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B190D2E72E0B97A600EB711C;
+			remoteInfo = TailTag;
+		};
+		C0A7B10F000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B190D2E02E0B97A600EB711C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B190D2E72E0B97A600EB711C;
+			remoteInfo = TailTag;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin XCBuildConfiguration section */
 		B190D2F12E0B97A800EB711C /* Debug */ = {
@@ -352,6 +496,80 @@
 			};
 			name = Release;
 		};
+		C0A7B10E0000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Josh.TailTagTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TailTag.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TailTag";
+			};
+			name = Debug;
+		};
+		C0A7B10E0000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Josh.TailTagTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TailTag.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TailTag";
+			};
+			name = Release;
+		};
+		C0A7B10F0000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Josh.TailTagUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = TailTag;
+			};
+			name = Debug;
+		};
+		C0A7B10F0000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Josh.TailTagUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = TailTag;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -373,12 +591,34 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		C0A7B10E0000000000000007 /* Build configuration list for PBXNativeTarget "TailTagTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0A7B10E0000000000000008 /* Debug */,
+				C0A7B10E0000000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C0A7B10F0000000000000007 /* Build configuration list for PBXNativeTarget "TailTagUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0A7B10F0000000000000008 /* Debug */,
+				C0A7B10F0000000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
 		C0A7A10C0000000000000001 /* XCLocalSwiftPackageReference "AviationCatalogCore" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = AviationCatalogCore;
+		};
+		C0A7A10D0000000000000001 /* XCLocalSwiftPackageReference "SmartEntryCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = SmartEntryCore;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -387,6 +627,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C0A7A10C0000000000000001 /* XCLocalSwiftPackageReference "AviationCatalogCore" */;
 			productName = AviationCatalog;
+		};
+		C0A7A10D0000000000000002 /* SmartEntry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0A7A10D0000000000000001 /* XCLocalSwiftPackageReference "SmartEntryCore" */;
+			productName = SmartEntry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

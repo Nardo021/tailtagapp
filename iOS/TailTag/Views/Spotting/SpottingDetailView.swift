@@ -6,12 +6,14 @@
 //
 
 import AppIntents
+import SmartEntry
 import SwiftUI
 
 struct SpottingDetailView: View {
     let entry: SpottingEntry
     @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var spottingStore: SpottingStore
+    @EnvironmentObject var catalog: AviationCatalogUIService
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
     @State private var showingDeleteAlert = false
@@ -67,30 +69,68 @@ struct SpottingDetailView: View {
                         // Airline
                         DetailRowView(
                             icon: "building.2",
-                            title: "Airline",
-                            value: entry.airline,
+                            title: "Airline / Operator",
+                            value: selectionSummary(reference.operatorField, emptyPlaceholder: "No operator"),
+                            caption: selectionCaption(reference.operatorField),
                             iconColor: appSettings.accentColor
                         )
-                        
-                        Divider()
-                            .padding(.leading, 60)
-                        
-                        // Location
+
+                        if reference.manufacturerField.kind != .absent {
+                            Divider().padding(.leading, 60)
+                            DetailRowView(
+                                icon: "wrench.and.screwdriver",
+                                title: "Manufacturer",
+                                value: selectionSummary(reference.manufacturerField, emptyPlaceholder: "No manufacturer"),
+                                caption: selectionCaption(reference.manufacturerField),
+                                iconColor: appSettings.accentColor
+                            )
+                        }
+
+                        Divider().padding(.leading, 60)
+
                         DetailRowView(
                             icon: "location",
                             title: "Location",
-                            value: entry.location,
+                            value: selectionSummary(reference.locationField, emptyPlaceholder: entry.location),
+                            caption: selectionCaption(reference.locationField),
                             iconColor: appSettings.accentColor
                         )
-                        
-                        if let aircraftType = entry.aircraftType, !aircraftType.isEmpty {
-                            Divider()
-                                .padding(.leading, 60)
-                            
+
+                        if reference.aircraftField.kind != .absent {
+                            Divider().padding(.leading, 60)
                             DetailRowView(
                                 icon: "airplane.departure",
-                                title: "Aircraft Type",
-                                value: aircraftType,
+                                title: "Aircraft",
+                                value: selectionSummary(reference.aircraftField, emptyPlaceholder: "No aircraft"),
+                                caption: selectionCaption(reference.aircraftField),
+                                iconColor: appSettings.accentColor
+                            )
+                        }
+
+                        if let role = classificationSummary(
+                            id: reference.classification.roleId,
+                            note: reference.classification.roleNote,
+                            labels: mergedRoleLabels
+                        ) {
+                            Divider().padding(.leading, 60)
+                            DetailRowView(
+                                icon: "tag",
+                                title: "Aircraft role",
+                                value: role,
+                                iconColor: appSettings.accentColor
+                            )
+                        }
+
+                        if let operation = classificationSummary(
+                            id: reference.classification.operationTypeId,
+                            note: reference.classification.operationTypeNote,
+                            labels: mergedOperationLabels
+                        ) {
+                            Divider().padding(.leading, 60)
+                            DetailRowView(
+                                icon: "arrow.triangle.branch",
+                                title: "Operation",
+                                value: operation,
                                 iconColor: appSettings.accentColor
                             )
                         }
@@ -153,6 +193,8 @@ struct SpottingDetailView: View {
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
+                    .accessibilityIdentifier("spotting-actions")
+                    .accessibilityLabel("Spotting actions")
                 }
             }
         }
@@ -175,15 +217,33 @@ struct SpottingDetailView: View {
             }
         }
     }
+
+    private var reference: SpottingReferenceState {
+        var copy = entry.reference
+        copy.operatorField = copy.operatorField.reconciled(existsInCatalog: catalog.operatorExists(copy.operatorField.catalogId))
+        copy.manufacturerField = copy.manufacturerField.reconciled(existsInCatalog: catalog.manufacturerExists(copy.manufacturerField.catalogId))
+        copy.aircraftField = copy.aircraftField.reconciled(existsInCatalog: catalog.aircraftExists(copy.aircraftField.catalogId))
+        copy.locationField = copy.locationField.reconciled(existsInCatalog: catalog.airportExists(copy.locationField.catalogId))
+        return copy
+    }
+
+    private var mergedRoleLabels: [String: String] {
+        ClassificationCopy.roleLabels.merging(catalog.classificationLabels().roles) { _, catalogLabel in catalogLabel }
+    }
+
+    private var mergedOperationLabels: [String: String] {
+        ClassificationCopy.operationLabels.merging(catalog.classificationLabels().operations) { _, catalogLabel in catalogLabel }
+    }
 }
 
 struct DetailRowView: View {
     let icon: String
     let title: String
     let value: String
+    var caption: String? = nil
     let iconColor: Color
     var isMultiline: Bool = false
-    
+
     var body: some View {
         HStack(alignment: isMultiline ? .top : .center, spacing: 16) {
             Image(systemName: icon)
@@ -191,20 +251,27 @@ struct DetailRowView: View {
                 .foregroundStyle(iconColor)
                 .frame(width: 24)
                 .padding(.top, isMultiline ? 2 : 0)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                
+
                 Text(value)
                     .font(.body)
                     .fontWeight(.medium)
                     .multilineTextAlignment(.leading)
+
+                if let caption, !caption.isEmpty {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
-            
+
             Spacer()
         }
         .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
     }
 }
