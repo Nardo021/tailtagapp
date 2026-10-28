@@ -162,8 +162,13 @@ public struct AviationCatalog: Sendable {
         try operatorIndex.search(query: query, limit: limit)
     }
 
-    public func searchAircraft(query: String, limit: Int = 20) throws -> [AircraftModel] {
-        try aircraftIndex.search(query: query, limit: limit)
+    /// `manufacturerId` is applied before `limit`, so a match is not dropped
+    /// because other manufacturers filled the result window.
+    public func searchAircraft(query: String, limit: Int = 20, manufacturerId: String? = nil) throws -> [AircraftModel] {
+        try aircraftIndex.search(query: query, limit: limit) { model in
+            guard let manufacturerId else { return true }
+            return model.manufacturerId == manufacturerId
+        }
     }
 
     public func searchAirports(query: String, limit: Int = 20) throws -> [AviationAirport] {

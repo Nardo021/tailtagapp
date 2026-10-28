@@ -1,33 +1,29 @@
-import SwiftUI
 import PhotosUI
+import SmartEntry
+import SwiftUI
+import UIKit
 import Vision
 
 struct AddSpottingView: View {
     @EnvironmentObject var spottingStore: SpottingStore
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var catalog: AviationCatalogUIService
     @Environment(\.dismiss) private var dismiss
-    
+
+    @StateObject private var editor = SpottingEditorModel()
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var photosData: [Data] = []
-    @State private var registration = ""
-    @State private var airline = ""
-    @State private var location = ""
-    @State private var aircraftType = ""
-    @State private var notes = ""
-    @State private var timestamp = Date()
     @State private var isDateFromPhoto = false
-    @State private var isRegistrationFromPhoto = false
-    @State private var isAirlineFromPhoto = false
     @State private var isProcessingImage = false
-    
+
     private let textDetector = AircraftTextDetector()
-    
+
     private var canSave: Bool {
-        !photosData.isEmpty && !registration.isEmpty && !airline.isEmpty && !location.isEmpty
+        editor.canSave(photoCount: photosData.count)
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section {
                     PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 10, matching: .images) {
@@ -104,7 +100,7 @@ struct AddSpottingView: View {
                                     // Extract metadata from first photo only
                                     if photosData.count == 1 {
                                         if let photoDate = PhotoMetadataExtractor.extractDateFromPhoto(data) {
-                                            timestamp = photoDate
+                                            editor.timestamp = photoDate
                                             isDateFromPhoto = true
                                         } else {
                                             isDateFromPhoto = false
@@ -121,78 +117,45 @@ struct AddSpottingView: View {
                     }
                 }
                 
-                Section("Aircraft Details") {
+                Section("Aircraft") {
                     VStack(alignment: .leading, spacing: 8) {
-                        TextField("Registration ", text: $registration)
-                            .textInputAutocapitalization(.characters)
-                            .onChange(of: registration) { _, _ in
-                                isRegistrationFromPhoto = false
-                            }
-                        
-                        if isRegistrationFromPhoto {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(appSettings.accentColor)
-                                    .font(.caption)
-                                Text("Registration detected from photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                        TextField("Registration", text: Binding(
+                            get: { editor.registration },
+                            set: { editor.editRegistration($0) }
+                        ))
+                        .textInputAutocapitalization(.characters)
+                        .accessibilityIdentifier("registration-field")
+
+                        if editor.registrationFromPhoto {
+                            photoHint("Registration detected from photo")
                         }
                     }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        TextField("Airline", text: $airline)
-                            .onChange(of: airline) { _, _ in
-                                isAirlineFromPhoto = false
-                            }
-                        
-                        if isAirlineFromPhoto {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(appSettings.accentColor)
-                                    .font(.caption)
-                                Text("Airline detected from photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    
-                    TextField("Location (e.g., EGLL or Heathrow)", text: $location)
-                        .textInputAutocapitalization(.characters)
-                    
-                    TextField("Aircraft Type", text: $aircraftType)
-                        .textInputAutocapitalization(.characters)
                 }
-                
+
+                SpottingReferenceForm(editor: editor, catalog: catalog, accent: appSettings.accentColor)
+
                 Section("Notes") {
-                    TextField("Additional notes...", text: $notes, axis: .vertical)
+                    TextField("Additional notes...", text: $editor.notes, axis: .vertical)
                         .lineLimit(3...6)
+                        .accessibilityIdentifier("notes-field")
                 }
-                
+
                 Section("Date & Time") {
                     VStack(alignment: .leading, spacing: 8) {
-                        DatePicker("Date Spotted", selection: $timestamp, displayedComponents: [.date, .hourAndMinute])
-                            .onChange(of: timestamp) { _, _ in
+                        DatePicker("Date Spotted", selection: $editor.timestamp, displayedComponents: [.date, .hourAndMinute])
+                            .onChange(of: editor.timestamp) { _, _ in
                                 isDateFromPhoto = false
                             }
-                        
+
                         if isDateFromPhoto {
-                            HStack {
-                                Image(systemName: "camera.fill")
-                                    .foregroundStyle(appSettings.accentColor)
-                                    .font(.caption)
-                                Text("Date automatically set from photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                            photoHint("Date automatically set from photo")
                         }
                     }
                 }
             }
             .navigationTitle("Add Aircraft")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear(perform: seedPhotoIfRequested)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -205,6 +168,7 @@ struct AddSpottingView: View {
                         saveSpotting()
                     }
                     .disabled(!canSave)
+                    .accessibilityIdentifier("save-spotting")
                     .foregroundStyle(canSave ? appSettings.accentColor : .secondary)
                 }
             }
@@ -217,15 +181,7 @@ struct AddSpottingView: View {
             return
         }
         
-        let entry = SpottingEntry(
-            photos: photosData,
-            registration: registration.trimmingCharacters(in: .whitespacesAndNewlines),
-            airline: airline.trimmingCharacters(in: .whitespacesAndNewlines),
-            location: location.trimmingCharacters(in: .whitespacesAndNewlines),
-            aircraftType: aircraftType.isEmpty ? nil : aircraftType.trimmingCharacters(in: .whitespacesAndNewlines),
-            notes: notes.isEmpty ? nil : notes.trimmingCharacters(in: .whitespacesAndNewlines),
-            timestamp: timestamp
-        )
+        let entry = editor.entry(id: UUID(), photos: photosData)
         
         Task { @MainActor in
             spottingStore.addEntry(entry)
@@ -242,26 +198,29 @@ struct AddSpottingView: View {
                         return
                     }
                     
-                    if let detectedRegistration = result.registration,
-                       result.confidence > 0.6,
-                       self.registration.isEmpty {
-                        self.registration = detectedRegistration
-                        self.isRegistrationFromPhoto = true
-                    }
-                    
-                    if let detectedAirline = result.airline,
-                       result.confidence > 0.6,
-                       self.airline.isEmpty {
-                        self.airline = detectedAirline
-                        self.isAirlineFromPhoto = true
-                    }
-                    
+                    editor.applyPhotoDetection(
+                        registration: result.registration,
+                        airline: result.airline,
+                        confidence: Double(result.confidence)
+                    )
+
                     continuation.resume()
                 }
             }
         }
     }
     
+    private func photoHint(_ text: String) -> some View {
+        HStack {
+            Image(systemName: "camera.fill")
+                .foregroundStyle(appSettings.accentColor)
+                .font(.caption)
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private func resizeImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
         let size = image.size
         let aspectRatio = size.width / size.height
@@ -283,10 +242,27 @@ struct AddSpottingView: View {
         
         return image
     }
+
+    /// UI tests cannot drive the system photo picker reliably. A debug launch
+    /// argument supplies one photo so the rest of the form can be saved.
+    private func seedPhotoIfRequested() {
+        #if DEBUG
+        guard ProcessInfo.processInfo.arguments.contains("-UITestSeedPhoto"), photosData.isEmpty else { return }
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 8, height: 8))
+        let image = renderer.image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 8, height: 8))
+        }
+        if let data = image.jpegData(compressionQuality: 0.8) {
+            photosData = [data]
+        }
+        #endif
+    }
 }
 
 #Preview {
     AddSpottingView()
         .environmentObject(SpottingStore())
         .environmentObject(AppSettings())
+        .environmentObject(AviationCatalogUIService())
 }

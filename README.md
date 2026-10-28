@@ -10,6 +10,8 @@ All spotting data is stored locally on the device. There is currently no backend
 - Capture or select one or more aircraft photos
 - Search and sort your spotting history
 - Extract aircraft registration text from photos with on-device OCR
+- Search the bundled catalog for an operator, manufacturer, aircraft model or family, and airport, or enter custom text
+- Record aircraft role and operation type separately
 - Store optional aircraft details, location, and notes
 - Customize accent color and light/dark appearance
 - iOS Spotlight search and App Intents integration
@@ -21,12 +23,12 @@ All spotting data is stored locally on the device. There is currently no backend
 ├── Android/          # Android Studio / Gradle project
 ├── data/aviation/    # Authoritative offline aviation catalog
 ├── docs/             # Catalog and data-source notes
-├── iOS/              # Xcode project and AviationCatalogCore package
+├── iOS/              # Xcode project, AviationCatalogCore, and SmartEntryCore
 ├── scripts/aviation/ # Catalog fetch, build, and validation
 └── README.md
 ```
 
-The two apps share the same product and user-facing concepts, but are implemented independently with each platform's native UI and storage APIs. The aviation reference catalog is generated once and bundled into both apps. See `docs/aviation-catalog.md`.
+The two apps share the same product and user-facing concepts, but are implemented independently with each platform's native UI and storage APIs. The aviation reference catalog is generated once and bundled into both apps. See `docs/aviation-catalog.md`. The spotting form that searches that catalog is described in `docs/smart-entry.md`.
 
 ## iOS
 

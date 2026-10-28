@@ -100,7 +100,7 @@ struct AviationSearchIndex<Record: Sendable>: Sendable {
         return exactCodes[compact]?.values.count ?? 0
     }
 
-    func search(query: String, limit: Int) throws -> [Record] {
+    func search(query: String, limit: Int, include: (Record) -> Bool = { _ in true }) throws -> [Record] {
         if limit < 0 {
             throw AviationCatalogError.invalidLimit
         }
@@ -120,6 +120,7 @@ struct AviationSearchIndex<Record: Sendable>: Sendable {
         ranked.reserveCapacity(candidates.count)
         for index in candidates {
             let entry = entries[index]
+            guard include(entry.record) else { continue }
             guard let tier = Self.tier(entry, normalized, compact, shortCode) else { continue }
             ranked.append((tier, entry.recordId, entry.record))
         }

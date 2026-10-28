@@ -8,6 +8,7 @@ struct TailTagApp: App {
     @StateObject private var spottingStore = SpottingStore()
     @StateObject private var appSettings = AppSettings()
     @StateObject private var intentRouter = TailTagIntentRouter()
+    @StateObject private var catalogService = AviationCatalogUIService()
 
     var body: some Scene {
         WindowGroup {
@@ -16,7 +17,9 @@ struct TailTagApp: App {
                 .environmentObject(spottingStore)
                 .environmentObject(appSettings)
                 .environmentObject(intentRouter)
+                .environmentObject(catalogService)
                 .task {
+                    catalogService.prepare()
                     // CoreData → SwiftData (runs once, local store)
                     await SpottingMigrator.migrateIfNeeded(store: spottingStore)
                     // Local SwiftData → CloudKit store (runs once when sync is first enabled)

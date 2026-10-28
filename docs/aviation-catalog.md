@@ -71,7 +71,7 @@ Three dimensions, not one combined enum:
 
 Role and operation each include `unknown` and `other`. Operator tags include `other` as a vocabulary value for a future explicit choice. The importer does not assign `other` by default.
 
-These values are not stored on a spotting entry in this change. A later entry-model change can persist a user's selection.
+Spotting entry stores a user's aircraft role and operation type. See `docs/smart-entry.md`. Operator tags stay on catalog records and are not a field the spotter picks.
 
 ## Unknown and custom values
 

@@ -1,5 +1,6 @@
-import SwiftData
 import Foundation
+import SmartEntry
+import SwiftData
 
 @Model
 final class SpottingRecord {
@@ -10,6 +11,20 @@ final class SpottingRecord {
     var aircraftType: String? = nil
     var notes: String? = nil
     var timestamp: Date = Date()
+    var operatorCatalogId: String? = nil
+    var operatorSelectionKind: String? = nil
+    var manufacturerName: String? = nil
+    var manufacturerCatalogId: String? = nil
+    var manufacturerSelectionKind: String? = nil
+    var aircraftCatalogId: String? = nil
+    var aircraftSelectionKind: String? = nil
+    var aircraftEntryKind: String? = nil
+    var airportCatalogId: String? = nil
+    var locationSelectionKind: String? = nil
+    var aircraftRoleId: String? = nil
+    var aircraftRoleNote: String? = nil
+    var operationTypeId: String? = nil
+    var operationTypeNote: String? = nil
 
     @Relationship(deleteRule: .cascade)
     var photoRecords: [PhotoRecord] = []
@@ -48,8 +63,79 @@ final class SpottingRecord {
             location: location,
             aircraftType: aircraftType,
             notes: notes,
-            timestamp: timestamp
+            timestamp: timestamp,
+            reference: referenceState()
         )
+    }
+
+    func referenceState() -> SpottingReferenceState {
+        PersistedSpottingReference(
+            operatorField: PersistedAviationField(
+                kind: operatorSelectionKind,
+                catalogId: operatorCatalogId,
+                text: airline
+            ),
+            manufacturerField: PersistedAviationField(
+                kind: manufacturerSelectionKind,
+                catalogId: manufacturerCatalogId,
+                text: manufacturerName ?? ""
+            ),
+            aircraftField: PersistedAviationField(
+                kind: aircraftSelectionKind,
+                catalogId: aircraftCatalogId,
+                text: aircraftType ?? "",
+                detail: aircraftEntryKind
+            ),
+            locationField: PersistedAviationField(
+                kind: locationSelectionKind,
+                catalogId: airportCatalogId,
+                text: location
+            ),
+            classification: ClassificationChoice(
+                roleId: aircraftRoleId,
+                roleNote: aircraftRoleNote,
+                operationTypeId: operationTypeId,
+                operationTypeNote: operationTypeNote
+            )
+        ).restored()
+    }
+
+    func applyReference(_ reference: SpottingReferenceState) {
+        let stored = reference.forStorage()
+        airline = stored.operatorField.text
+        operatorSelectionKind = stored.operatorField.kind
+        operatorCatalogId = stored.operatorField.catalogId
+        manufacturerName = stored.manufacturerField.text.isEmpty ? nil : stored.manufacturerField.text
+        manufacturerSelectionKind = stored.manufacturerField.kind
+        manufacturerCatalogId = stored.manufacturerField.catalogId
+        aircraftType = stored.aircraftField.text.isEmpty ? nil : stored.aircraftField.text
+        aircraftSelectionKind = stored.aircraftField.kind
+        aircraftCatalogId = stored.aircraftField.catalogId
+        aircraftEntryKind = stored.aircraftField.detail
+        location = stored.locationField.text
+        locationSelectionKind = stored.locationField.kind
+        airportCatalogId = stored.locationField.catalogId
+        aircraftRoleId = stored.classification.roleId
+        aircraftRoleNote = stored.classification.roleNote
+        operationTypeId = stored.classification.operationTypeId
+        operationTypeNote = stored.classification.operationTypeNote
+    }
+
+    func copyCatalogFields(from other: SpottingRecord) {
+        operatorCatalogId = other.operatorCatalogId
+        operatorSelectionKind = other.operatorSelectionKind
+        manufacturerName = other.manufacturerName
+        manufacturerCatalogId = other.manufacturerCatalogId
+        manufacturerSelectionKind = other.manufacturerSelectionKind
+        aircraftCatalogId = other.aircraftCatalogId
+        aircraftSelectionKind = other.aircraftSelectionKind
+        aircraftEntryKind = other.aircraftEntryKind
+        airportCatalogId = other.airportCatalogId
+        locationSelectionKind = other.locationSelectionKind
+        aircraftRoleId = other.aircraftRoleId
+        aircraftRoleNote = other.aircraftRoleNote
+        operationTypeId = other.operationTypeId
+        operationTypeNote = other.operationTypeNote
     }
 }
 

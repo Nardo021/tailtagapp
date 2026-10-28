@@ -30,6 +30,11 @@ class AppSettings: ObservableObject {
     private let onboardingKey = "HasCompletedOnboarding"
 
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-UITestReset") {
+            userDefaults.removeObject(forKey: onboardingKey)
+        }
+        #endif
         loadSettings()
     }
 

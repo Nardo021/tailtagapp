@@ -11,6 +11,20 @@ data class SpottingEntry(
     val aircraftType: String? = null,
     val notes: String? = null,
     val timestamp: Long = System.currentTimeMillis(),
+    val operatorCatalogId: String? = null,
+    val operatorSelectionKind: String? = null,
+    val manufacturerName: String? = null,
+    val manufacturerCatalogId: String? = null,
+    val manufacturerSelectionKind: String? = null,
+    val aircraftCatalogId: String? = null,
+    val aircraftSelectionKind: String? = null,
+    val aircraftEntryKind: String? = null,
+    val airportCatalogId: String? = null,
+    val locationSelectionKind: String? = null,
+    val aircraftRoleId: String? = null,
+    val aircraftRoleNote: String? = null,
+    val operationTypeId: String? = null,
+    val operationTypeNote: String? = null,
 )
 
 enum class SortOption(val label: String) {

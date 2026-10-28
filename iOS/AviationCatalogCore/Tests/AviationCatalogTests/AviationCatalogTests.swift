@@ -207,6 +207,34 @@ final class AviationCatalogTests: XCTestCase {
         }
     }
 
+    func testManufacturerFilterKeepsMatchesOutsideTheGlobalWindow() throws {
+        let common = "maker:common"
+        let rare = "maker:rare"
+        var aircraft: [AircraftModel] = (0..<201).map { index in
+            syntheticAircraft(id: String(format: "zz-common-%03d", index), manufacturerId: common, name: "Alpha \(index)")
+        }
+        aircraft.append(syntheticAircraft(id: "zz-rare-early", manufacturerId: rare, name: "Alpha Early"))
+        aircraft.append(syntheticAircraft(id: "zz-rare-later", manufacturerId: rare, name: "Alpha Later"))
+        let catalog = AviationCatalog(
+            schemaVersion: 1,
+            catalogVersion: "manufacturer-window",
+            operators: [],
+            manufacturers: [],
+            aircraft: aircraft,
+            airports: [],
+            classifications: []
+        )
+
+        let truncated = try catalog.searchAircraft(query: "alpha", limit: 200)
+        XCTAssertEqual(truncated.count, 200)
+        XCTAssertFalse(truncated.contains { $0.manufacturerId == rare })
+
+        let filtered = try catalog.searchAircraft(query: "alpha", limit: 20, manufacturerId: rare)
+        XCTAssertEqual(filtered.map(\.id), ["zz-rare-early", "zz-rare-later"])
+        XCTAssertEqual(try catalog.searchAircraft(query: "alpha", limit: 1, manufacturerId: rare).map(\.id), ["zz-rare-early"])
+        XCTAssertTrue(try catalog.searchAircraft(query: "alpha", limit: 20, manufacturerId: "maker:missing").isEmpty)
+    }
+
     private func fixture(_ name: String) throws -> [String: Any] {
         let url = try XCTUnwrap(Bundle.module.url(forResource: (name as NSString).deletingPathExtension, withExtension: "json"))
         let data = try Data(contentsOf: url)
@@ -224,4 +252,22 @@ private func residentMegabytes() -> Double? {
     }
     guard result == KERN_SUCCESS else { return nil }
     return Double(info.resident_size) / 1_048_576
+}
+
+private func syntheticAircraft(id: String, manufacturerId: String, name: String) -> AircraftModel {
+    AircraftModel(
+        id: id,
+        manufacturerId: manufacturerId,
+        manufacturer: nil,
+        manufacturerNames: [],
+        familyId: nil,
+        family: nil,
+        model: name,
+        displayName: name,
+        entryKind: "model",
+        icaoTypeDesignators: [],
+        iataEquipmentCodes: [],
+        aliases: [],
+        sourceId: id
+    )
 }

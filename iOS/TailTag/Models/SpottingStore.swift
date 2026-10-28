@@ -1,6 +1,7 @@
 import Combine
 import CoreData
 import Foundation
+import SmartEntry
 import SwiftData
 import SwiftUI
 
@@ -17,6 +18,16 @@ class SpottingStore: ObservableObject {
     }
 
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-UITestReset") {
+            do {
+                try modelContext.delete(model: SpottingRecord.self)
+                try modelContext.save()
+            } catch {
+                print("UI test reset failed: \(error.localizedDescription)")
+            }
+        }
+        #endif
         loadEntries()
 
         // Refresh when CloudKit delivers remote store changes (low-level)
@@ -136,6 +147,7 @@ class SpottingStore: ObservableObject {
             timestamp: entry.timestamp
         )
         modelContext.insert(record)
+        record.applyReference(entry.reference)
 
         for (index, photoData) in entry.photos.enumerated() {
             let photo = PhotoRecord(data: SpottingStore.compressImageData(photoData), index: index)
@@ -179,11 +191,9 @@ class SpottingStore: ObservableObject {
         do {
             if let record = try modelContext.fetch(descriptor).first {
                 record.registration = updatedSpotting.registration
-                record.airline = updatedSpotting.airline
-                record.location = updatedSpotting.location
-                record.aircraftType = updatedSpotting.aircraftType
                 record.notes = updatedSpotting.notes
                 record.timestamp = updatedSpotting.timestamp
+                record.applyReference(updatedSpotting.reference)
 
                 // Replace photos
                 for photo in record.photoRecords {
@@ -231,8 +241,19 @@ class SpottingStore: ObservableObject {
             entry.registration.localizedCaseInsensitiveContains(searchText) ||
             entry.airline.localizedCaseInsensitiveContains(searchText) ||
             entry.location.localizedCaseInsensitiveContains(searchText) ||
-            (entry.aircraftType?.localizedCaseInsensitiveContains(searchText) ?? false)
+            (entry.aircraftType?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+            (entry.reference.storedManufacturerText?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+            (entry.reference.classification.roleNote?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+            (entry.reference.classification.operationTypeNote?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+            classificationMatches(entry.reference.classification, searchText: searchText)
         }
+    }
+
+    private func classificationMatches(_ classification: ClassificationChoice, searchText: String) -> Bool {
+        let role = classification.roleId ?? ""
+        let operation = classification.operationTypeId ?? ""
+        return ClassificationCopy.roleLabel(role).localizedCaseInsensitiveContains(searchText) ||
+            ClassificationCopy.operationLabel(operation).localizedCaseInsensitiveContains(searchText)
     }
 
     var mostRecentEntries: [SpottingEntry] {

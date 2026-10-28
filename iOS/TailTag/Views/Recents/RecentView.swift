@@ -61,6 +61,8 @@ struct RecentView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Add Aircraft")
+                    .accessibilityIdentifier("add-aircraft")
                 }
             }
         }

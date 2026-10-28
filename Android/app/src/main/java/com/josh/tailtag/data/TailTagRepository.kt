@@ -22,22 +22,7 @@ class TailTagRepository(private val context: Context) {
         buildList {
             for (index in 0 until array.length()) {
                 val item = array.getJSONObject(index)
-                add(
-                    SpottingEntry(
-                        id = item.getString("id"),
-                        photos = item.getJSONArray("photos").let { photos ->
-                            buildList {
-                                for (photoIndex in 0 until photos.length()) add(photos.getString(photoIndex))
-                            }
-                        },
-                        registration = item.getString("registration"),
-                        airline = item.getString("airline"),
-                        location = item.getString("location"),
-                        aircraftType = item.optString("aircraftType").takeUnless { it.isBlank() },
-                        notes = item.optString("notes").takeUnless { it.isBlank() },
-                        timestamp = item.getLong("timestamp"),
-                    ),
-                )
+                add(spottingFromJson(item))
             }
         }
     }.getOrDefault(emptyList())
@@ -45,18 +30,7 @@ class TailTagRepository(private val context: Context) {
     fun saveEntries(entries: List<SpottingEntry>) {
         val array = JSONArray()
         entries.forEach { entry ->
-            array.put(
-                JSONObject().apply {
-                    put("id", entry.id)
-                    put("photos", JSONArray(entry.photos))
-                    put("registration", entry.registration)
-                    put("airline", entry.airline)
-                    put("location", entry.location)
-                    put("aircraftType", entry.aircraftType.orEmpty())
-                    put("notes", entry.notes.orEmpty())
-                    put("timestamp", entry.timestamp)
-                },
-            )
+            array.put(spottingToJson(entry))
         }
         preferences.edit().putString(ENTRIES_KEY, array.toString()).apply()
     }
@@ -106,4 +80,66 @@ class TailTagRepository(private val context: Context) {
         private const val PREFERENCES = "tailtag_data"
         private const val ENTRIES_KEY = "entries"
     }
+}
+
+fun spottingFromJson(item: JSONObject): SpottingEntry {
+    val photos = item.getJSONArray("photos")
+    return SpottingEntry(
+        id = item.getString("id"),
+        photos = List(photos.length()) { photos.getString(it) },
+        registration = item.getString("registration"),
+        airline = item.getString("airline"),
+        location = item.getString("location"),
+        aircraftType = item.optionalText("aircraftType"),
+        notes = item.optionalText("notes"),
+        timestamp = item.getLong("timestamp"),
+        operatorCatalogId = item.optionalText("operatorCatalogId"),
+        operatorSelectionKind = item.optionalText("operatorSelectionKind"),
+        manufacturerName = item.optionalText("manufacturerName"),
+        manufacturerCatalogId = item.optionalText("manufacturerCatalogId"),
+        manufacturerSelectionKind = item.optionalText("manufacturerSelectionKind"),
+        aircraftCatalogId = item.optionalText("aircraftCatalogId"),
+        aircraftSelectionKind = item.optionalText("aircraftSelectionKind"),
+        aircraftEntryKind = item.optionalText("aircraftEntryKind"),
+        airportCatalogId = item.optionalText("airportCatalogId"),
+        locationSelectionKind = item.optionalText("locationSelectionKind"),
+        aircraftRoleId = item.optionalText("aircraftRoleId"),
+        aircraftRoleNote = item.optionalText("aircraftRoleNote"),
+        operationTypeId = item.optionalText("operationTypeId"),
+        operationTypeNote = item.optionalText("operationTypeNote"),
+    )
+}
+
+fun spottingToJson(entry: SpottingEntry): JSONObject = JSONObject().apply {
+    put("id", entry.id)
+    put("photos", JSONArray(entry.photos))
+    put("registration", entry.registration)
+    put("airline", entry.airline)
+    put("location", entry.location)
+    put("aircraftType", entry.aircraftType.orEmpty())
+    put("notes", entry.notes.orEmpty())
+    put("timestamp", entry.timestamp)
+    putOptional("operatorCatalogId", entry.operatorCatalogId)
+    putOptional("operatorSelectionKind", entry.operatorSelectionKind)
+    putOptional("manufacturerName", entry.manufacturerName)
+    putOptional("manufacturerCatalogId", entry.manufacturerCatalogId)
+    putOptional("manufacturerSelectionKind", entry.manufacturerSelectionKind)
+    putOptional("aircraftCatalogId", entry.aircraftCatalogId)
+    putOptional("aircraftSelectionKind", entry.aircraftSelectionKind)
+    putOptional("aircraftEntryKind", entry.aircraftEntryKind)
+    putOptional("airportCatalogId", entry.airportCatalogId)
+    putOptional("locationSelectionKind", entry.locationSelectionKind)
+    putOptional("aircraftRoleId", entry.aircraftRoleId)
+    putOptional("aircraftRoleNote", entry.aircraftRoleNote)
+    putOptional("operationTypeId", entry.operationTypeId)
+    putOptional("operationTypeNote", entry.operationTypeNote)
+}
+
+private fun JSONObject.optionalText(key: String): String? {
+    if (!has(key) || isNull(key)) return null
+    return optString(key).takeIf { it.isNotEmpty() }
+}
+
+private fun JSONObject.putOptional(key: String, value: String?) {
+    if (!value.isNullOrEmpty()) put(key, value)
 }
