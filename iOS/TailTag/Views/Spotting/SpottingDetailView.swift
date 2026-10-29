@@ -17,6 +17,7 @@ struct SpottingDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingEditView = false
     @State private var showingDeleteAlert = false
+    @State private var deleteErrorMessage: String?
     
     var body: some View {
         NavigationView {
@@ -204,11 +205,23 @@ struct SpottingDetailView: View {
         .alert("Delete Spotting", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                spottingStore.deleteSpotting(entry)
-                dismiss()
+                do {
+                    try spottingStore.deleteSpotting(entry)
+                    dismiss()
+                } catch {
+                    deleteErrorMessage = error.localizedDescription
+                }
             }
         } message: {
             Text("This will permanently delete this spotting. This action cannot be undone.")
+        }
+        .alert("Could Not Delete", isPresented: Binding(
+            get: { deleteErrorMessage != nil },
+            set: { if !$0 { deleteErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(deleteErrorMessage ?? "")
         }
         .userActivity("com.Josh.TailTag.viewingSpotting", element: TailTagSpottingEntity(entry: entry)) { spottingEntity, activity in
             activity.title = "Viewing \(entry.registration)"

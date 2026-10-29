@@ -35,10 +35,13 @@ The two apps share the same product and user-facing concepts, but are implemente
 ### Technology
 
 - Swift and SwiftUI
-- Core Data for local spotting data and photos
+- SwiftData for spotting records, with a one-time migration from the older Core Data store
+- Optional iCloud sync through a CloudKit-backed SwiftData store
 - PhotosUI for photo selection
 - App Intents and Spotlight indexing
 - Deployment target: iOS 18.0 or later
+
+How records, photos, and migrations are kept safe is described in [docs/data-integrity.md](docs/data-integrity.md).
 
 ### Requirements
 
@@ -63,7 +66,7 @@ The iOS app's bundle identifier is currently `com.Josh.TailTag`. Change it if yo
 - Jetpack Compose and Material 3
 - AndroidX Navigation and Lifecycle
 - Google ML Kit text recognition
-- Local storage with SharedPreferences and app-private photo files
+- Local storage with SharedPreferences and app-private photo files. See [docs/data-integrity.md](docs/data-integrity.md).
 - Minimum Android version: API 26
 - Compile and target SDK: API 37
 

@@ -5,6 +5,7 @@ coreKtx = "1.17.0"
 composeBom = "2025.08.01"
 exifinterface = "1.4.1"
 junit = "4.13.2"
+coroutines = "1.10.2"
 junitVersion = "1.2.1"
 orgJson = "20240303"
 espressoCore = "3.7.0"
@@ -32,6 +33,7 @@ androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterfa
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 

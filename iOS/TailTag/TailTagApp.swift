@@ -39,6 +39,13 @@ struct TailTagApp: App {
     }
 }
 
+enum ActiveStoreIdentity: Equatable, Sendable {
+    /// The container was opened with the private CloudKit database. A later local save is not a completed upload.
+    case cloudKit(storeURL: URL)
+    /// On-device store. `cloudKitFallback` means the iCloud preference was on but the CloudKit store did not open.
+    case local(storeURL: URL, cloudKitFallback: Bool)
+}
+
 extension ModelContainer {
     // Shared container used by the app and AppIntents.
     // Reads the iCloud sync preference at startup; toggling requires a restart.
@@ -56,19 +63,25 @@ extension ModelContainer {
                     cloudKitDatabase: .private("iCloud.com.Josh.TailTag")
                 )
                 let container = try ModelContainer(for: schema, configurations: [config])
-                print("[TailTag] CloudKit ModelContainer initialized successfully")
+                activeIdentity = .cloudKit(storeURL: config.url)
                 return container
             } catch {
-                print("[TailTag] CloudKit ModelContainer failed (\(error.localizedDescription)), falling back to local storage")
+                cloudKitFallback = true
             }
         }
 
         do {
             // Local store keeps its own file so it can never conflict with the CloudKit store.
             let config = ModelConfiguration("TailTagLocal", schema: schema, cloudKitDatabase: .none)
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: schema, configurations: [config])
+            activeIdentity = .local(storeURL: config.url, cloudKitFallback: cloudKitFallback)
+            return container
         } catch {
             fatalError("Cannot create local ModelContainer: \(error)")
         }
     }()
+
+    /// Set while `tailTag` is created. Tests that never touch `tailTag` leave this as local.
+    static var activeIdentity: ActiveStoreIdentity = .local(storeURL: URL(fileURLWithPath: "/dev/null"), cloudKitFallback: false)
+    static var cloudKitFallback = false
 }

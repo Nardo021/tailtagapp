@@ -52,6 +52,14 @@ struct ContentView: View {
                 .environmentObject(spottingStore)
                 .environmentObject(appSettings)
         }
+        .alert("Spotting Data", isPresented: Binding(
+            get: { spottingStore.userNotice != nil },
+            set: { if !$0 { spottingStore.userNotice = nil } }
+        )) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(spottingStore.userNotice ?? "")
+        }
     }
 
     private var mainAppView: AnyView {

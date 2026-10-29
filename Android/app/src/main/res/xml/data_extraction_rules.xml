@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
+   Empty cloud-backup keeps Android's default, which includes shared preferences and files.
+   Photo JSON stores file names inside spotting_photos so a restored files directory still resolves.
+   The device-transfer section stays unset so transfer follows the cloud-backup rules.
    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
     </cloud-backup>
     <!--
     <device-transfer>

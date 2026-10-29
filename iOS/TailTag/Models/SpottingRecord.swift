@@ -54,10 +54,11 @@ final class SpottingRecord {
     }
 
     var asEntry: SpottingEntry {
-        let p = photos
-        return SpottingEntry(
+        // Missing photo bytes stay missing. A placeholder Data value would count as a real photo
+        // and can hide records whose CloudKit attachments have not been downloaded yet.
+        SpottingEntry(
             id: id,
-            photos: p.isEmpty ? [Data()] : p,
+            photos: photos,
             registration: registration,
             airline: airline,
             location: location,
@@ -119,6 +120,68 @@ final class SpottingRecord {
         aircraftRoleNote = stored.classification.roleNote
         operationTypeId = stored.classification.operationTypeId
         operationTypeNote = stored.classification.operationTypeNote
+    }
+
+    func migratedReference() -> MigratedReference {
+        MigratedReference(
+            operatorCatalogId: operatorCatalogId,
+            operatorSelectionKind: operatorSelectionKind,
+            manufacturerName: manufacturerName,
+            manufacturerCatalogId: manufacturerCatalogId,
+            manufacturerSelectionKind: manufacturerSelectionKind,
+            aircraftCatalogId: aircraftCatalogId,
+            aircraftSelectionKind: aircraftSelectionKind,
+            aircraftEntryKind: aircraftEntryKind,
+            airportCatalogId: airportCatalogId,
+            locationSelectionKind: locationSelectionKind,
+            aircraftRoleId: aircraftRoleId,
+            aircraftRoleNote: aircraftRoleNote,
+            operationTypeId: operationTypeId,
+            operationTypeNote: operationTypeNote
+        )
+    }
+
+    func applyMigratedReference(_ reference: MigratedReference) {
+        operatorCatalogId = reference.operatorCatalogId
+        operatorSelectionKind = reference.operatorSelectionKind
+        manufacturerName = reference.manufacturerName
+        manufacturerCatalogId = reference.manufacturerCatalogId
+        manufacturerSelectionKind = reference.manufacturerSelectionKind
+        aircraftCatalogId = reference.aircraftCatalogId
+        aircraftSelectionKind = reference.aircraftSelectionKind
+        aircraftEntryKind = reference.aircraftEntryKind
+        airportCatalogId = reference.airportCatalogId
+        locationSelectionKind = reference.locationSelectionKind
+        aircraftRoleId = reference.aircraftRoleId
+        aircraftRoleNote = reference.aircraftRoleNote
+        operationTypeId = reference.operationTypeId
+        operationTypeNote = reference.operationTypeNote
+    }
+
+    func fillMigratedReference(_ reference: MigratedReference) -> Bool {
+        var changed = false
+        func fill(_ current: inout String?, _ incoming: String?) {
+            let trimmed = incoming?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let currentBlank = current?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+            guard currentBlank, let trimmed, !trimmed.isEmpty else { return }
+            current = trimmed
+            changed = true
+        }
+        fill(&operatorCatalogId, reference.operatorCatalogId)
+        fill(&operatorSelectionKind, reference.operatorSelectionKind)
+        fill(&manufacturerName, reference.manufacturerName)
+        fill(&manufacturerCatalogId, reference.manufacturerCatalogId)
+        fill(&manufacturerSelectionKind, reference.manufacturerSelectionKind)
+        fill(&aircraftCatalogId, reference.aircraftCatalogId)
+        fill(&aircraftSelectionKind, reference.aircraftSelectionKind)
+        fill(&aircraftEntryKind, reference.aircraftEntryKind)
+        fill(&airportCatalogId, reference.airportCatalogId)
+        fill(&locationSelectionKind, reference.locationSelectionKind)
+        fill(&aircraftRoleId, reference.aircraftRoleId)
+        fill(&aircraftRoleNote, reference.aircraftRoleNote)
+        fill(&operationTypeId, reference.operationTypeId)
+        fill(&operationTypeNote, reference.operationTypeNote)
+        return changed
     }
 
     func copyCatalogFields(from other: SpottingRecord) {

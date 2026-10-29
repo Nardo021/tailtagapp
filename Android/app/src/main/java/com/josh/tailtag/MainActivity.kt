@@ -87,6 +87,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
@@ -179,7 +180,9 @@ import com.josh.tailtag.ui.AccentOption
 import com.josh.tailtag.ui.TailTagTheme
 import com.josh.tailtag.ui.accentColor
 import com.josh.tailtag.ui.accentOptions
+import com.josh.tailtag.data.SaveResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -243,31 +246,44 @@ private fun TailTagApp(viewModel: TailTagViewModel) {
             }
         },
     ) { padding ->
-        when (selectedTab) {
-            AppTab.SEARCH.name -> SearchScreen(
-                entries = viewModel.entries,
-                searchText = searchText,
-                onSearchTextChanged = { searchText = it },
-                sortOption = sortOption,
-                onSortChanged = { sortOption = it },
-                filters = viewModel.spottingFilters,
-                catalog = viewModel.filterCatalog,
-                catalogPhase = viewModel.catalogPhase,
-                onFiltersChanged = viewModel::applySpottingFilters,
-                onSearchCatalog = { browse, query -> viewModel.searchFilterCatalog(browse, query) },
-                onAdd = { editorMode = EditorMode(null) },
-                onEntrySelected = { selectedEntry = it },
-                modifier = Modifier.padding(padding),
-            )
-            AppTab.SETTINGS.name -> SettingsScreen(viewModel, Modifier.padding(padding))
-            else -> RecentScreen(
-                entries = viewModel.entries,
-                sortOption = sortOption,
-                onSortChanged = { sortOption = it },
-                onAdd = { editorMode = EditorMode(null) },
-                onEntrySelected = { selectedEntry = it },
-                modifier = Modifier.padding(padding),
-            )
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            viewModel.storageProblem?.let { problem ->
+                StorageProblemBanner(
+                    problem = problem,
+                    onRetry = viewModel::retryLoad,
+                    onRestore = viewModel::restoreBackup,
+                )
+            }
+            when (selectedTab) {
+                AppTab.SEARCH.name -> SearchScreen(
+                    entries = viewModel.entries,
+                    searchText = searchText,
+                    onSearchTextChanged = { searchText = it },
+                    sortOption = sortOption,
+                    onSortChanged = { sortOption = it },
+                    filters = viewModel.spottingFilters,
+                    catalog = viewModel.filterCatalog,
+                    catalogPhase = viewModel.catalogPhase,
+                    onFiltersChanged = viewModel::applySpottingFilters,
+                    onSearchCatalog = { browse, query -> viewModel.searchFilterCatalog(browse, query) },
+                    onAdd = { editorMode = EditorMode(null) },
+                    onEntrySelected = { selectedEntry = it },
+                    isLoading = viewModel.isLoadingEntries,
+                    recordsUnreadable = viewModel.storageProblem != null,
+                    modifier = Modifier.weight(1f),
+                )
+                AppTab.SETTINGS.name -> SettingsScreen(viewModel, Modifier.weight(1f))
+                else -> RecentScreen(
+                    entries = viewModel.entries,
+                    sortOption = sortOption,
+                    onSortChanged = { sortOption = it },
+                    onAdd = { editorMode = EditorMode(null) },
+                    onEntrySelected = { selectedEntry = it },
+                    isLoading = viewModel.isLoadingEntries,
+                    recordsUnreadable = viewModel.storageProblem != null,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 
@@ -301,6 +317,8 @@ private fun RecentScreen(
     onSortChanged: (SortOption) -> Unit,
     onAdd: () -> Unit,
     onEntrySelected: (SpottingEntry) -> Unit,
+    isLoading: Boolean = false,
+    recordsUnreadable: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
@@ -327,7 +345,11 @@ private fun RecentScreen(
                 ) { Icon(Icons.Default.Add, "Add aircraft") }
             },
         )
-        if (entries.isEmpty()) {
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else if (recordsUnreadable && entries.isEmpty()) {
+            UnreadableRecords()
+        } else if (entries.isEmpty()) {
             EmptyState(onAdd)
         } else {
             LazyColumn(
@@ -465,6 +487,39 @@ private fun Badge(text: String, icon: androidx.compose.ui.graphics.vector.ImageV
     }
 }
 
+@Composable
+private fun UnreadableRecords() {
+    Column(
+        Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text("Records unavailable", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Saved aircraft records could not be read. They were not replaced with an empty log.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun StorageProblemBanner(
+    problem: StorageProblem,
+    onRetry: () -> Unit,
+    onRestore: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(problem.message, color = MaterialTheme.colorScheme.error)
+        Row {
+            TextButton(onClick = onRetry) { Text("Retry") }
+            if (problem.canRestoreBackup) {
+                TextButton(onClick = onRestore) { Text("Restore backup") }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchScreen(
@@ -480,6 +535,8 @@ private fun SearchScreen(
     onSearchCatalog: suspend (FilterCatalogBrowse, String) -> FilterCatalogSearchResult,
     onAdd: () -> Unit,
     onEntrySelected: (SpottingEntry) -> Unit,
+    isLoading: Boolean = false,
+    recordsUnreadable: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
@@ -535,7 +592,11 @@ private fun SearchScreen(
             ),
         )
         Spacer(Modifier.height(8.dp))
-        if (entries.isEmpty()) {
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else if (recordsUnreadable && entries.isEmpty()) {
+            UnreadableRecords()
+        } else if (entries.isEmpty()) {
             EmptyState(onAdd)
         } else if (filtered.isEmpty()) {
             FilteredEmptyState(
@@ -659,6 +720,9 @@ private fun NoResults(query: String) {
 @Composable
 private fun SettingsScreen(viewModel: TailTagViewModel, modifier: Modifier = Modifier) {
     var showResetConfirmation by remember { mutableStateOf(false) }
+    var resetInProgress by remember { mutableStateOf(false) }
+    var resetErrorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp)) {
@@ -735,12 +799,33 @@ private fun SettingsScreen(viewModel: TailTagViewModel, modifier: Modifier = Mod
             onDismissRequest = { showResetConfirmation = false },
             title = { Text("Reset all settings") },
             text = { Text("This will reset all app settings to their defaults and clear all spotting data. This action cannot be undone.") },
-            dismissButton = { TextButton(onClick = { showResetConfirmation = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { if (!resetInProgress) showResetConfirmation = false }) { Text("Cancel") } },
             confirmButton = {
-                TextButton(onClick = { showResetConfirmation = false; viewModel.resetApp() }) {
-                    Text("Reset", color = MaterialTheme.colorScheme.error)
+                TextButton(
+                    enabled = !resetInProgress,
+                    onClick = {
+                        if (resetInProgress) return@TextButton
+                        resetInProgress = true
+                        scope.launch {
+                            val result = viewModel.resetApp()
+                            resetInProgress = false
+                            showResetConfirmation = false
+                            if (result is SaveResult.Failed) resetErrorMessage = result.message
+                            if (result is SaveResult.SavedWithCleanupFailure) resetErrorMessage = result.message
+                        }
+                    },
+                ) {
+                    Text(if (resetInProgress) "Resetting" else "Reset", color = MaterialTheme.colorScheme.error)
                 }
             },
+        )
+    }
+    resetErrorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { resetErrorMessage = null },
+            title = { Text("Reset incomplete") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { resetErrorMessage = null }) { Text("OK") } },
         )
     }
 }
@@ -953,6 +1038,9 @@ private fun DetailDialog(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var deleteInProgress by remember { mutableStateOf(false) }
+    var deleteErrorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val sheetHeight = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.height.toDp() * 0.77f
@@ -1106,12 +1194,33 @@ private fun DetailDialog(
             onDismissRequest = { showDeleteConfirmation = false },
             title = { Text("Delete spotting") },
             text = { Text("This will permanently delete this spotting. This action cannot be undone.") },
-            dismissButton = { TextButton({ showDeleteConfirmation = false }) { Text("Cancel") } },
+            dismissButton = { TextButton({ if (!deleteInProgress) showDeleteConfirmation = false }) { Text("Cancel") } },
             confirmButton = {
-                TextButton({ showDeleteConfirmation = false; viewModel.deleteEntry(entry); onDismiss() }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                TextButton(enabled = !deleteInProgress, onClick = {
+                    if (deleteInProgress) return@TextButton
+                    deleteInProgress = true
+                    scope.launch {
+                        val result = viewModel.deleteEntry(entry)
+                        deleteInProgress = false
+                        showDeleteConfirmation = false
+                        if (result is SaveResult.Failed) {
+                            deleteErrorMessage = result.message
+                        } else {
+                            onDismiss()
+                        }
+                    }
+                }) {
+                    Text(if (deleteInProgress) "Deleting" else "Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
+        )
+    }
+    deleteErrorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { deleteErrorMessage = null },
+            title = { Text("Could not delete") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { deleteErrorMessage = null }) { Text("OK") } },
         )
     }
 }
@@ -1174,6 +1283,9 @@ private fun EntryEditorDialog(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
+    var saveErrorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(maxItems = 10)) { uris ->
         val remainingSlots = (10 - existingPhotos.size - newUris.size).coerceAtLeast(0)
@@ -1220,20 +1332,29 @@ private fun EntryEditorDialog(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-                TextButton(enabled = valid, onClick = {
-                            val draft = editor.copy(notes = editor.notes).toEntry(
-                                id = existing?.id ?: java.util.UUID.randomUUID().toString(),
-                                timestamp = timestamp,
-                                photos = existingPhotos,
-                            )
-                            if (existing == null) {
-                                viewModel.addEntry(draft, newUris)
-                            } else {
-                                viewModel.updateEntry(draft, existingPhotos, newUris)
+                TextButton(onClick = { if (!saving) onDismiss() }) { Text("Cancel") }
+                TextButton(enabled = valid && !saving, onClick = {
+                            if (saving) return@TextButton
+                            saving = true
+                            saveErrorMessage = null
+                            scope.launch {
+                                val draft = editor.toEntry(
+                                    id = existing?.id ?: java.util.UUID.randomUUID().toString(),
+                                    timestamp = timestamp,
+                                    photos = existingPhotos,
+                                )
+                                val result = if (existing == null) {
+                                    viewModel.addEntry(draft, newUris)
+                                } else {
+                                    viewModel.updateEntry(draft, existingPhotos, newUris)
+                                }
+                                saving = false
+                                when (result) {
+                                    is SaveResult.Failed -> saveErrorMessage = result.message
+                                    is SaveResult.Saved, is SaveResult.SavedWithCleanupFailure -> onSaved()
+                                }
                             }
-                            onSaved()
-                        }) { Text("Save") }
+                        }) { Text(if (saving) "Saving" else "Save") }
             }
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -1361,11 +1482,31 @@ private fun EntryEditorDialog(
     }
     if (showDeleteConfirmation && existing != null) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
+            onDismissRequest = { if (!saving) showDeleteConfirmation = false },
             title = { Text("Delete spotting") },
             text = { Text("This will permanently delete this spotting. This action cannot be undone.") },
-            dismissButton = { TextButton({ showDeleteConfirmation = false }) { Text("Cancel") } },
-            confirmButton = { TextButton({ showDeleteConfirmation = false; viewModel.deleteEntry(existing); onDismiss() }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton({ if (!saving) showDeleteConfirmation = false }) { Text("Cancel") } },
+            confirmButton = {
+                TextButton(enabled = !saving, onClick = {
+                    val entryToDelete = existing ?: return@TextButton
+                    if (saving) return@TextButton
+                    saving = true
+                    scope.launch {
+                        val result = viewModel.deleteEntry(entryToDelete)
+                        saving = false
+                        showDeleteConfirmation = false
+                        if (result is SaveResult.Failed) saveErrorMessage = result.message else onDismiss()
+                    }
+                }) { Text(if (saving) "Deleting" else "Delete", color = MaterialTheme.colorScheme.error) }
+            },
+        )
+    }
+    saveErrorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { saveErrorMessage = null },
+            title = { Text("Could not save") },
+            text = { Text(message) },
+            confirmButton = { TextButton(onClick = { saveErrorMessage = null }) { Text("OK") } },
         )
     }
 }

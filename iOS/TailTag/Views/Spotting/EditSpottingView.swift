@@ -16,7 +16,8 @@ struct EditSpottingView: View {
     @State private var photosData: [Data]
     @State private var showingDeleteAlert = false
     @State private var isDateFromPhoto = false
-
+    @State private var isSaving = false
+    @State private var saveErrorMessage: String?
     private let textDetector = AircraftTextDetector()
 
     init(spotting: SpottingEntry) {
@@ -103,13 +104,21 @@ struct EditSpottingView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(isSaving ? "Saving" : "Save") {
                         saveChanges()
                     }
                     .fontWeight(.semibold)
-                    .disabled(!isValidEntry)
+                    .disabled(!isValidEntry || isSaving)
                     .accessibilityIdentifier("save-spotting")
                 }
+            }
+            .alert("Could Not Save", isPresented: Binding(
+                get: { saveErrorMessage != nil },
+                set: { if !$0 { saveErrorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(saveErrorMessage ?? "")
             }
         }
         .navigationViewStyle(.stack)
@@ -159,16 +168,32 @@ struct EditSpottingView: View {
     }
 
     private func saveChanges() {
-        guard !photosData.isEmpty else { return }
-        var updatedSpotting = editor.entry(id: spotting.id, photos: photosData)
-        updatedSpotting = updatedSpotting.replacingReference(editor.reference)
-        spottingStore.updateSpotting(updatedSpotting)
-        dismiss()
+        guard !isSaving else { return }
+        guard !photosData.isEmpty else {
+            saveErrorMessage = "Keep at least one photo before saving."
+            return
+        }
+        let updatedSpotting = editor.entry(id: spotting.id, photos: photosData)
+        isSaving = true
+        do {
+            try spottingStore.updateSpotting(updatedSpotting)
+            dismiss()
+        } catch {
+            isSaving = false
+            saveErrorMessage = error.localizedDescription
+        }
     }
     
     private func deleteSpotting() {
-        spottingStore.deleteSpotting(spotting)
-        dismiss()
+        guard !isSaving else { return }
+        isSaving = true
+        do {
+            try spottingStore.deleteSpotting(spotting)
+            dismiss()
+        } catch {
+            isSaving = false
+            saveErrorMessage = error.localizedDescription
+        }
     }
     
     private func detectAircraftInfoFromImage(_ image: UIImage) {

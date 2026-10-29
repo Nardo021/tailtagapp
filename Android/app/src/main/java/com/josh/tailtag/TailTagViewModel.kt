@@ -11,16 +11,15 @@ import androidx.lifecycle.viewModelScope
 import com.josh.tailtag.aviation.AviationCatalog
 import com.josh.tailtag.aviation.AviationCatalogLoader
 import com.josh.tailtag.aviation.AviationCatalogRepository
-import com.josh.tailtag.aviation.AircraftModel
-import com.josh.tailtag.aviation.AviationAirport
-import com.josh.tailtag.aviation.AviationManufacturer
-import com.josh.tailtag.aviation.AviationOperator
 import com.josh.tailtag.aviation.entry.CatalogLoadPhase
 import com.josh.tailtag.aviation.entry.CatalogLoadState
-import com.josh.tailtag.aviation.entry.catalogQueryGuidance
 import com.josh.tailtag.aviation.entry.CatalogQueryGuidance
+import com.josh.tailtag.aviation.entry.catalogQueryGuidance
 import com.josh.tailtag.aviation.entry.linkedManufacturerSelection
+import com.josh.tailtag.data.LoadOutcome
+import com.josh.tailtag.data.SaveResult
 import com.josh.tailtag.data.TailTagRepository
+import com.josh.tailtag.data.UnreadableReason
 import com.josh.tailtag.filters.PreparedSpottingFilterCatalog
 import com.josh.tailtag.filters.SpottingFilterState
 import com.josh.tailtag.filters.toFilterSnapshot
@@ -29,11 +28,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+data class StorageProblem(
+    val message: String,
+    val canRestoreBackup: Boolean,
+)
+
 class TailTagViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = TailTagRepository(application)
     private val preferences = application.getSharedPreferences("tailtag_settings", Context.MODE_PRIVATE)
+    private var appliedVersion = -1L
 
-    var entries by mutableStateOf(repository.loadEntries())
+    var entries by mutableStateOf<List<SpottingEntry>>(emptyList())
+        private set
+    var isLoadingEntries by mutableStateOf(true)
+        private set
+    var storageProblem by mutableStateOf<StorageProblem?>(null)
         private set
     var spottingFilters by mutableStateOf(SpottingFilterState())
         private set
@@ -56,10 +65,6 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
     }
     @Volatile private var catalog: AviationCatalog? = null
     private var catalogState = CatalogLoadState()
-
-    init {
-        ensureCatalog()
-    }
 
     fun applySpottingFilters(filters: SpottingFilterState) {
         spottingFilters = filters
@@ -129,6 +134,11 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    init {
+        ensureCatalog()
+        viewModelScope.launch { refresh() }
+    }
+
     fun completeOnboarding() {
         hasCompletedOnboarding = true
         preferences.edit().putBoolean("onboarding_complete", true).apply()
@@ -149,47 +159,97 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
         preferences.edit().putString("color_scheme", value).apply()
     }
 
-    fun addEntry(draft: SpottingEntry, photoUris: List<Uri>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val photoPaths = photoUris.mapNotNull(repository::copyPhoto)
-            val entry = draft.copy(
-                photos = photoPaths,
-                registration = draft.registration.trim(),
-            )
-            val updated = listOf(entry) + entries
-            repository.saveEntries(updated)
-            withContext(Dispatchers.Main) { entries = updated }
+    fun retryLoad() {
+        viewModelScope.launch { refresh() }
+    }
+
+    fun restoreBackup() {
+        viewModelScope.launch {
+            publish(repository.restoreBackup())
+            isLoadingEntries = false
         }
     }
 
-    fun updateEntry(entry: SpottingEntry, remainingPhotoPaths: List<String>, newPhotoUris: List<Uri>) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val newPaths = newPhotoUris.mapNotNull(repository::copyPhoto)
-            val finalPaths = remainingPhotoPaths + newPaths
-            entry.photos.filterNot(finalPaths::contains).forEach(repository::deletePhoto)
-            val updatedEntry = entry.copy(photos = finalPaths)
-            val updated = entries.map { if (it.id == entry.id) updatedEntry else it }
-            repository.saveEntries(updated)
-            withContext(Dispatchers.Main) { entries = updated }
+    suspend fun addEntry(draft: SpottingEntry, photoUris: List<Uri>): SaveResult {
+        val result = repository.add(draft, photoUris)
+        publishSave(result)
+        return result
+    }
+
+    suspend fun updateEntry(
+        entry: SpottingEntry,
+        remainingPhotoPaths: List<String>,
+        newPhotoUris: List<Uri>,
+    ): SaveResult {
+        val result = repository.update(entry, remainingPhotoPaths, newPhotoUris)
+        publishSave(result)
+        return result
+    }
+
+    suspend fun deleteEntry(entry: SpottingEntry): SaveResult {
+        val result = repository.delete(entry.id)
+        publishSave(result)
+        return result
+    }
+
+    suspend fun resetApp(): SaveResult {
+        val result = repository.reset()
+        when (result) {
+            is SaveResult.Saved, is SaveResult.SavedWithCleanupFailure -> {
+                publishSave(result)
+                val cleared = withContext(Dispatchers.IO) { preferences.edit().clear().commit() }
+                if (!cleared) {
+                    return SaveResult.Failed("Aircraft records were cleared, but app settings could not be reset.")
+                }
+                hasCompletedOnboarding = false
+                accentName = "blue"
+                colorScheme = "system"
+            }
+            is SaveResult.Failed -> Unit
+        }
+        return result
+    }
+
+    private suspend fun refresh() {
+        publish(repository.load())
+        isLoadingEntries = false
+    }
+
+    private fun publishSave(result: SaveResult) {
+        when (result) {
+            is SaveResult.Saved -> publishEntries(result.version, result.entries)
+            is SaveResult.SavedWithCleanupFailure -> {
+                publishEntries(result.version, result.entries)
+                storageProblem = StorageProblem(result.message, canRestoreBackup = false)
+            }
+            is SaveResult.Failed -> Unit
         }
     }
 
-    fun deleteEntry(entry: SpottingEntry) {
-        entry.photos.forEach(repository::deletePhoto)
-        val updated = entries.filterNot { it.id == entry.id }
+    private fun publish(outcome: LoadOutcome) {
+        when (outcome) {
+            is LoadOutcome.NoSavedData -> publishEntries(outcome.version, emptyList())
+            is LoadOutcome.Loaded -> publishEntries(outcome.version, outcome.entries)
+            is LoadOutcome.Unreadable -> {
+                storageProblem = StorageProblem(messageFor(outcome.reason), outcome.canRestoreBackup)
+            }
+        }
+    }
+
+    private fun publishEntries(version: Long, updated: List<SpottingEntry>) {
+        if (version < appliedVersion) return
+        appliedVersion = version
         entries = updated
-        viewModelScope.launch(Dispatchers.IO) { repository.saveEntries(updated) }
+        storageProblem = null
     }
 
-    fun resetApp() {
-        entries.flatMap(SpottingEntry::photos).forEach(repository::deletePhoto)
-        entries = emptyList()
-        repository.deleteAllPhotos()
-        preferences.edit().clear().apply()
-        hasCompletedOnboarding = false
-        accentName = "blue"
-        colorScheme = "system"
-        viewModelScope.launch(Dispatchers.IO) { repository.saveEntries(emptyList()) }
+    private fun messageFor(reason: UnreadableReason): String {
+        return when (reason) {
+            UnreadableReason.Corrupt, UnreadableReason.MissingFields ->
+                "Saved aircraft records could not be read. They were not erased."
+            UnreadableReason.ReadFailed ->
+                "Saved aircraft records could not be read. They were not erased."
+        }
     }
 
     private suspend fun loadCatalog() {

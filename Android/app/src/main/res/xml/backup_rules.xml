@@ -5,9 +5,11 @@
    Note: This file is ignored for devices older than API 31
    See https://developer.android.com/about/versions/12/backup-restore
 -->
-<full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
+<!--
+  Intentionally empty: Android's default full backup already includes shared preferences
+  and files under the app's files directory, including tailtag_data and spotting_photos.
+  Do not replace this with a narrow include list; that can drop data for existing installs.
+  Photo JSON stores file names, not absolute paths, so a restored files directory still resolves.
 -->
+<full-backup-content>
 </full-backup-content>

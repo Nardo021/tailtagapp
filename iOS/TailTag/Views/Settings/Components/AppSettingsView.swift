@@ -4,6 +4,7 @@ struct AppSettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var spottingStore: SpottingStore
     @State private var showResetConfirmation = false
+    @State private var resetErrorMessage: String?
     
     var body: some View {
         Section("App") {
@@ -51,16 +52,28 @@ struct AppSettingsView: View {
             } message: {
                 Text("This will reset all app settings to their defaults and clear all spotting data. This action cannot be undone.")
             }
+            .alert("Could Not Reset", isPresented: Binding(
+                get: { resetErrorMessage != nil },
+                set: { if !$0 { resetErrorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(resetErrorMessage ?? "")
+            }
         }
     }
     
     private func resetAppSettings() {
+        do {
+            try spottingStore.clearAllEntries()
+        } catch {
+            resetErrorMessage = "Spotting records could not be cleared, so settings were left unchanged."
+            return
+        }
         appSettings.accentColor = .blue
         appSettings.colorScheme = nil
         appSettings.currentAppIcon = nil
         appSettings.hasCompletedOnboarding = false
-        
-        spottingStore.clearAllEntries()
     }
 }
 

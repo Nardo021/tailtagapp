@@ -28,7 +28,8 @@ struct SpottingEntry: Identifiable, Hashable, Codable, Sendable {
         reference: SpottingReferenceState? = nil
     ) {
         self.id = id
-        self.photos = photos.isEmpty ? [Data()] : photos
+        // Empty bytes are not photos. Callers that have no image yet keep an empty list.
+        self.photos = photos.filter { !$0.isEmpty }
         self.registration = registration
         self.notes = notes
         self.timestamp = timestamp
