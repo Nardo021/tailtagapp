@@ -151,6 +151,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.josh.tailtag.data.AircraftTextDetector
 import com.josh.tailtag.aviation.entry.SpottingEditorState
@@ -160,6 +161,17 @@ import com.josh.tailtag.aviation.entry.classificationSummary
 import com.josh.tailtag.aviation.entry.selectionCaption
 import com.josh.tailtag.aviation.entry.selectionSummary
 import com.josh.tailtag.aviation.ui.SpottingReferenceEditor
+import com.josh.tailtag.aviation.entry.CatalogLoadPhase
+import com.josh.tailtag.filters.SpottingFilterCatalog
+import com.josh.tailtag.filters.SpottingFilterState
+import com.josh.tailtag.filters.filterSpottingEntries
+import com.josh.tailtag.filters.toFilterSort
+import com.josh.tailtag.filters.toFilterable
+import com.josh.tailtag.filters.ui.ActiveFilterChips
+import com.josh.tailtag.filters.ui.AdvancedFilterScreen
+import com.josh.tailtag.filters.ui.FilterCatalogBrowse
+import com.josh.tailtag.filters.ui.FilterCatalogSearchResult
+import com.josh.tailtag.filters.ui.searchFilterCatalog
 import com.josh.tailtag.model.SortOption
 import com.josh.tailtag.model.SpottingEntry
 import com.josh.tailtag.model.sortedByOption
@@ -238,6 +250,11 @@ private fun TailTagApp(viewModel: TailTagViewModel) {
                 onSearchTextChanged = { searchText = it },
                 sortOption = sortOption,
                 onSortChanged = { sortOption = it },
+                filters = viewModel.spottingFilters,
+                catalog = viewModel.filterCatalog,
+                catalogPhase = viewModel.catalogPhase,
+                onFiltersChanged = viewModel::applySpottingFilters,
+                onSearchCatalog = { browse, query -> viewModel.searchFilterCatalog(browse, query) },
                 onAdd = { editorMode = EditorMode(null) },
                 onEntrySelected = { selectedEntry = it },
                 modifier = Modifier.padding(padding),
@@ -456,30 +473,41 @@ private fun SearchScreen(
     onSearchTextChanged: (String) -> Unit,
     sortOption: SortOption,
     onSortChanged: (SortOption) -> Unit,
+    filters: SpottingFilterState,
+    catalog: SpottingFilterCatalog,
+    catalogPhase: CatalogLoadPhase,
+    onFiltersChanged: (SpottingFilterState) -> Unit,
+    onSearchCatalog: suspend (FilterCatalogBrowse, String) -> FilterCatalogSearchResult,
     onAdd: () -> Unit,
     onEntrySelected: (SpottingEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
-    val filtered = entries.filter { entry ->
-        listOf(
-            entry.registration,
-            entry.airline,
-            entry.location,
-            entry.aircraftType.orEmpty(),
-            entry.manufacturerName.orEmpty(),
-            entry.aircraftRoleNote.orEmpty(),
-            entry.operationTypeNote.orEmpty(),
-            ClassificationCopy.roleLabel(entry.aircraftRoleId.orEmpty()),
-            ClassificationCopy.operationLabel(entry.operationTypeId.orEmpty()),
+    var showFilters by remember { mutableStateOf(false) }
+    val filtered = remember(entries, searchText, filters, sortOption, catalog) {
+        filterSpottingEntries(
+            entries = entries,
+            searchText = searchText,
+            filters = filters,
+            catalog = catalog,
+            sort = sortOption.toFilterSort(),
+            calendar = java.util.Calendar.getInstance(),
         )
-            .any { it.contains(searchText, ignoreCase = true) }
-    }.sortedByOption(sortOption)
+    }
     Column(modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Search") },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             actions = {
+                FilledTonalIconButton(
+                    onClick = { showFilters = true },
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        Icons.Default.Tune,
+                        contentDescription = if (filters.isActive) "Filters, ${filters.activeConditionCount} active" else "Filters",
+                    )
+                }
                 Box {
                     FilledTonalIconButton(
                         onClick = { showSortMenu = true },
@@ -509,18 +537,36 @@ private fun SearchScreen(
         Spacer(Modifier.height(8.dp))
         if (entries.isEmpty()) {
             EmptyState(onAdd)
-        } else if (searchText.isNotBlank() && filtered.isEmpty()) {
-            NoResults(searchText)
+        } else if (filtered.isEmpty()) {
+            FilteredEmptyState(
+                filters = filters,
+                searchText = searchText,
+                onFiltersChanged = onFiltersChanged,
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = 20.dp, bottom = 32.dp),
+                contentPadding = PaddingValues(top = 12.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (searchText.isNotBlank()) {
-                    item {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Results for \"$searchText\"", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                item {
+                    Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (filters.isActive) {
+                            ActiveFilterChips(
+                                chips = filters.chips(),
+                                onRemove = { onFiltersChanged(filters.removeChip(it.id)) },
+                                onClearAll = { onFiltersChanged(filters.reset()) },
+                            )
+                        }
+                        if (filters.isActive && !catalog.isAvailable && catalogPhase != CatalogLoadPhase.LOADING) {
+                            Text(
+                                "Some catalog details are unavailable, so family and manufacturer links may not resolve.",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(resultTitle(filtered.size, entries.size, searchText, filters), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.weight(1f))
                             Text(filtered.size.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -528,6 +574,73 @@ private fun SearchScreen(
                 }
                 items(filtered, key = { it.id }) { entry -> SpottingCard(entry) { onEntrySelected(entry) } }
             }
+        }
+    }
+    if (showFilters) {
+        Dialog(
+            onDismissRequest = { showFilters = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false),
+        ) {
+            Surface(Modifier.fillMaxSize()) {
+                AdvancedFilterScreen(
+                    applied = filters,
+                    entries = entries.map { it.toFilterable() },
+                    searchText = searchText,
+                    catalog = catalog,
+                    catalogFailed = catalogPhase == CatalogLoadPhase.FAILED,
+                    catalogLoading = catalogPhase == CatalogLoadPhase.LOADING || catalogPhase == CatalogLoadPhase.IDLE,
+                    onCancel = { showFilters = false },
+                    onApply = {
+                        onFiltersChanged(it)
+                        showFilters = false
+                    },
+                    searchCatalog = onSearchCatalog,
+                )
+            }
+        }
+    }
+}
+
+private fun resultTitle(visible: Int, total: Int, searchText: String, filters: SpottingFilterState): String {
+    if (filters.isActive || searchText.isNotEmpty()) return "$visible of $total sightings"
+    return if (total == 1) "1 sighting" else "$total sightings"
+}
+
+@Composable
+private fun FilteredEmptyState(
+    filters: SpottingFilterState,
+    searchText: String,
+    onFiltersChanged: (SpottingFilterState) -> Unit,
+) {
+    Column(Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        if (filters.isActive) {
+            ActiveFilterChips(
+                chips = filters.chips(),
+                onRemove = { onFiltersChanged(filters.removeChip(it.id)) },
+                onClearAll = { onFiltersChanged(filters.reset()) },
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+        Icon(
+            if (filters.isActive) Icons.Default.Tune else Icons.Default.Search,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(if (filters.isActive) "No matching sightings" else "No results", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            when {
+                filters.isActive && searchText.isNotEmpty() -> "No saved sightings match these filters and \"$searchText\"."
+                filters.isActive -> "The collection still has sightings, but none match the current filters."
+                else -> "No spottings match \"$searchText\""
+            },
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (filters.isActive) {
+            Spacer(Modifier.height(16.dp))
+            TextButton(onClick = { onFiltersChanged(filters.reset()) }) { Text("Clear filters") }
         }
     }
 }

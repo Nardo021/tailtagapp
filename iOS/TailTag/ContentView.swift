@@ -1,3 +1,4 @@
+import SmartEntry
 import SwiftUI
 
 enum TailTagTab {
@@ -12,6 +13,7 @@ struct ContentView: View {
     @EnvironmentObject var intentRouter: TailTagIntentRouter
     @State private var selectedTab: TailTagTab = .recent
     @State private var searchText = ""
+    @State private var spottingFilters = SpottingFilterState()
     @State private var selectedSpotting: SpottingEntry?
     @State private var showingAddSpotting = false
 
@@ -62,7 +64,7 @@ struct ContentView: View {
                 }
 
                 Tab("Search", systemImage: "magnifyingglass", value: TailTagTab.search, role: .search) {
-                    SearchView(searchText: $searchText)
+                    SearchView(searchText: $searchText, filters: $spottingFilters)
                         .environmentObject(spottingStore)
                         .environmentObject(appSettings)
                 }
@@ -88,7 +90,7 @@ struct ContentView: View {
                 }
 
                 Tab("Search", systemImage: "magnifyingglass", value: TailTagTab.search) {
-                    SearchView(searchText: $searchText)
+                    SearchView(searchText: $searchText, filters: $spottingFilters)
                         .environmentObject(spottingStore)
                         .environmentObject(appSettings)
                 }

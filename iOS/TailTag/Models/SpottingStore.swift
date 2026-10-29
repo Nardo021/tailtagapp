@@ -27,6 +27,9 @@ class SpottingStore: ObservableObject {
                 print("UI test reset failed: \(error.localizedDescription)")
             }
         }
+        if ProcessInfo.processInfo.arguments.contains("-UITestSeedFilters") {
+            seedFilterUITestEntries()
+        }
         #endif
         loadEntries()
 
@@ -58,6 +61,53 @@ class SpottingStore: ObservableObject {
             }
         }
     }
+
+    #if DEBUG
+    private func seedFilterUITestEntries() {
+        let samples: [(registration: String, reference: SpottingReferenceState)] = [
+            (
+                "VH-QFA",
+                SpottingReferenceState(
+                    operatorField: .catalog(id: "op:qantas", displayText: "Qantas Airways"),
+                    aircraftField: .catalog(id: "ac:b789", displayText: "Boeing 787-9", detail: "Model"),
+                    locationField: .catalog(id: "apt:yssy", displayText: "Sydney Airport"),
+                    classification: ClassificationChoice(roleId: "civil", operationTypeId: "passenger")
+                )
+            ),
+            (
+                "VH-JST",
+                SpottingReferenceState(
+                    operatorField: .catalog(id: "op:jetstar", displayText: "Jetstar"),
+                    aircraftField: .catalog(id: "ac:a320", displayText: "Airbus A320", detail: "Model"),
+                    locationField: .catalog(id: "apt:yssy", displayText: "Sydney Airport"),
+                    classification: ClassificationChoice(roleId: "civil", operationTypeId: "passenger")
+                )
+            ),
+            (
+                "VH-MIL",
+                SpottingReferenceState(
+                    operatorField: .catalog(id: "op:raaf", displayText: "RAAF"),
+                    aircraftField: .catalog(id: "ac:c130", displayText: "C-130", detail: "Model"),
+                    locationField: .custom(from: "Richmond") ?? .absent,
+                    classification: ClassificationChoice(roleId: "military", operationTypeId: "cargo")
+                )
+            ),
+        ]
+        for (index, sample) in samples.enumerated() {
+            let record = SpottingRecord(
+                registration: sample.registration,
+                timestamp: Date(timeIntervalSince1970: TimeInterval(1_700_000_000 + index))
+            )
+            modelContext.insert(record)
+            record.applyReference(sample.reference)
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            print("UI test filter seed failed: \(error.localizedDescription)")
+        }
+    }
+    #endif
 
     // MARK: - Load
 

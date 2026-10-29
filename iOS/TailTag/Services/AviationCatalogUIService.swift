@@ -13,6 +13,7 @@ struct AviationSearchOutcome<Record: Sendable>: Sendable {
 final class AviationCatalogUIService: ObservableObject {
     @Published private(set) var phase: CatalogLoadPhase = .idle
     @Published private(set) var errorMessage: String?
+    @Published private(set) var filterCatalog: PreparedSpottingFilterCatalog = .unavailable
 
     private let repository: AviationCatalogRepository
     private var catalog: AviationCatalog?
@@ -75,6 +76,70 @@ final class AviationCatalogUIService: ObservableObject {
         }.value
     }
 
+    func searchFilterCatalog(_ browse: FilterCatalogBrowse, query: String, limit: Int = 20) async -> FilterCatalogSearchResult {
+        switch browse {
+        case .operators:
+            guard let outcome = await searchOperators(query: query, limit: limit) else { return .unavailable }
+            return FilterCatalogSearchResult(
+                hits: outcome.records.map { record in
+                    FilterCatalogHit(
+                        id: record.id,
+                        title: record.name,
+                        subtitle: CatalogPresentation.operatorCodeSummary(record),
+                        token: .reference(.operatorField, .catalog(id: record.id, label: record.name))
+                    )
+                },
+                ambiguous: outcome.ambiguous,
+                unmatched: outcome.unmatched
+            )
+        case .manufacturers:
+            guard let outcome = await searchManufacturers(query: query, limit: limit) else { return .unavailable }
+            return FilterCatalogSearchResult(
+                hits: outcome.records.map { record in
+                    FilterCatalogHit(
+                        id: record.id,
+                        title: record.name,
+                        subtitle: CatalogPresentation.manufacturerSubtitle(record),
+                        token: .reference(.manufacturer, .catalog(id: record.id, label: record.name))
+                    )
+                },
+                ambiguous: outcome.ambiguous,
+                unmatched: outcome.unmatched
+            )
+        case .aircraft:
+            guard let outcome = await searchAircraft(query: query, limit: limit, manufacturerId: nil) else { return .unavailable }
+            return FilterCatalogSearchResult(
+                hits: outcome.records.map { record in
+                    let token: FilterToken = record.entryKind == "family"
+                        ? .aircraft(.family(id: record.id, label: record.displayName))
+                        : .aircraft(.model(id: record.id, label: record.displayName))
+                    return FilterCatalogHit(
+                        id: "\(record.entryKind)-\(record.id)",
+                        title: record.displayName,
+                        subtitle: CatalogPresentation.aircraftSubtitle(record),
+                        token: token
+                    )
+                },
+                ambiguous: outcome.ambiguous,
+                unmatched: outcome.unmatched
+            )
+        case .locations:
+            guard let outcome = await searchAirports(query: query, limit: limit) else { return .unavailable }
+            return FilterCatalogSearchResult(
+                hits: outcome.records.map { record in
+                    FilterCatalogHit(
+                        id: record.id,
+                        title: record.name,
+                        subtitle: CatalogPresentation.airportSnapshot(record),
+                        token: .reference(.location, .catalog(id: record.id, label: record.name))
+                    )
+                },
+                ambiguous: outcome.ambiguous,
+                unmatched: outcome.unmatched
+            )
+        }
+    }
+
     func searchAircraft(
         query: String,
         limit: Int,
@@ -107,7 +172,12 @@ final class AviationCatalogUIService: ObservableObject {
         do {
             let loaded = try await repository.catalog()
             if Task.isCancelled { return }
+            let prepared = await Task.detached(priority: .userInitiated) {
+                makeFilterCatalog(from: loaded)
+            }.value
+            if Task.isCancelled { return }
             catalog = loaded
+            filterCatalog = prepared
             loadState.succeed()
             phase = loadState.phase
             errorMessage = nil

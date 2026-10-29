@@ -103,7 +103,7 @@ final class SpottingRecordPersistenceTests: XCTestCase {
     }
 
     private func makeContainer() throws -> ModelContainer {
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         return try ModelContainer(for: SpottingRecord.self, PhotoRecord.self, configurations: configuration)
     }
 

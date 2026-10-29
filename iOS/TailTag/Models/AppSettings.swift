@@ -34,6 +34,9 @@ class AppSettings: ObservableObject {
         if ProcessInfo.processInfo.arguments.contains("-UITestReset") {
             userDefaults.removeObject(forKey: onboardingKey)
         }
+        if ProcessInfo.processInfo.arguments.contains("-UITestSeedFilters") {
+            userDefaults.set(true, forKey: onboardingKey)
+        }
         #endif
         loadSettings()
     }

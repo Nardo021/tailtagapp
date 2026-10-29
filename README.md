@@ -8,7 +8,7 @@ All spotting data is stored locally on the device. There is currently no backend
 
 - Add, edit, delete, and browse aircraft sightings
 - Capture or select one or more aircraft photos
-- Search and sort your spotting history
+- Search, sort, and filter a saved spotting collection by operator, manufacturer, aircraft, role, operation, location, registration, and date
 - Extract aircraft registration text from photos with on-device OCR
 - Search the bundled catalog for an operator, manufacturer, aircraft model or family, and airport, or enter custom text
 - Record aircraft role and operation type separately
@@ -28,7 +28,7 @@ All spotting data is stored locally on the device. There is currently no backend
 └── README.md
 ```
 
-The two apps share the same product and user-facing concepts, but are implemented independently with each platform's native UI and storage APIs. The aviation reference catalog is generated once and bundled into both apps. See `docs/aviation-catalog.md`. The spotting form that searches that catalog is described in `docs/smart-entry.md`.
+The two apps share the same product and user-facing concepts, but are implemented independently with each platform's native UI and storage APIs. The aviation reference catalog is generated once and bundled into both apps. See `docs/aviation-catalog.md`. The spotting form that searches that catalog is described in `docs/smart-entry.md`. Filtering a saved collection is described in `docs/advanced-filters.md`.
 
 ## iOS
 

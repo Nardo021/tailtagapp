@@ -21,6 +21,9 @@ import com.josh.tailtag.aviation.entry.catalogQueryGuidance
 import com.josh.tailtag.aviation.entry.CatalogQueryGuidance
 import com.josh.tailtag.aviation.entry.linkedManufacturerSelection
 import com.josh.tailtag.data.TailTagRepository
+import com.josh.tailtag.filters.PreparedSpottingFilterCatalog
+import com.josh.tailtag.filters.SpottingFilterState
+import com.josh.tailtag.filters.toFilterSnapshot
 import com.josh.tailtag.model.SpottingEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,6 +34,10 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
     private val preferences = application.getSharedPreferences("tailtag_settings", Context.MODE_PRIVATE)
 
     var entries by mutableStateOf(repository.loadEntries())
+        private set
+    var spottingFilters by mutableStateOf(SpottingFilterState())
+        private set
+    var filterCatalog by mutableStateOf(PreparedSpottingFilterCatalog.unavailable)
         private set
     var catalogPhase by mutableStateOf(CatalogLoadPhase.IDLE)
         private set
@@ -52,6 +59,10 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         ensureCatalog()
+    }
+
+    fun applySpottingFilters(filters: SpottingFilterState) {
+        spottingFilters = filters
     }
 
     fun ensureCatalog() {
@@ -184,8 +195,10 @@ class TailTagViewModel(application: Application) : AndroidViewModel(application)
     private suspend fun loadCatalog() {
         try {
             val loaded = catalogRepository.catalog()
+            val prepared = PreparedSpottingFilterCatalog(loaded.toFilterSnapshot())
             withContext(Dispatchers.Main) {
                 catalog = loaded
+                filterCatalog = prepared
                 catalogState = catalogState.succeed()
                 catalogPhase = catalogState.phase
                 catalogError = null
